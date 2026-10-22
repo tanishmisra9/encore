@@ -12,6 +12,30 @@ The public web demo exercises the same planning engine without requiring a Disco
 - Enforces budget and walking radius in code, records one current vote per person, and clears votes when the plan changes.
 - Deletes expired plans after seven days.
 
+## Architecture
+
+```mermaid
+flowchart LR
+  D[Discord /encore] --> V[Signature verification]
+  V --> C{Recent chat enabled?}
+  C -->|yes| H[Read latest 25 messages once]
+  H --> X[Extract explicit tastes and limits]
+  C -->|no| X
+  X --> P[Plan in D1]
+  P --> Q[Qloo Search and Insights]
+  Q --> R[Constraint filter and voting]
+  R --> D
+  W[Web demo] --> P
+```
+
+| Decision | Owner | Guardrail |
+| --- | --- | --- |
+| Turn stated chat into candidate preferences | Extractor | Stores only short extracted statements, never raw message text |
+| Cultural and local candidate ranking | Qloo | Production path returns unavailable if Qloo fails |
+| Radius and budget | TypeScript | Filters candidates before they reach the voter |
+| Vote validity and count | TypeScript | One current vote per known member |
+| Opening hours and booking | Human | Always shown as unconfirmed unless data is supplied |
+
 ## Data sources
 
 Until a Qloo key is available, the public demo uses fictional places and labels results as provisional. Local development can use a small OpenStreetMap Overpass query through `recommend(..., 'live')`; automated tests only use fixtures.
