@@ -1,0 +1,7 @@
+{
+  "name": "encore",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-22",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "d1_databases": [{ "binding": "DB", "database_name": "encore", "database_id": "REPLACE_AFTER_CREATE" }]
+}
