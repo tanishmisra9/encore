@@ -1,10 +1,11 @@
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 
+const baseUrl = process.env.BASE_URL || 'http://localhost:8787';
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-  await page.goto('http://localhost:8787/');
+  await page.goto(baseUrl + '/');
   await page.locator('input[name="artist"]').fill('The Marías');
   await page.getByRole('button', { name: 'Start a group plan' }).click();
   await page.getByRole('heading', { name: 'The Marías · Brooklyn Steel' }).waitFor();
@@ -29,7 +30,7 @@ try {
   assert.equal(await page.locator('.member').count(), 3);
   await page.screenshot({ path: '/tmp/encore-browser.png', fullPage: true });
   const second = await browser.newPage();
-  await second.goto('http://localhost:8787/');
+  await second.goto(baseUrl + '/');
   await second.locator('input[name="artist"]').fill('Another Artist');
   await second.getByRole('button', { name: 'Start a group plan' }).click();
   assert.notEqual(await second.locator('#share-url').inputValue(), link);
