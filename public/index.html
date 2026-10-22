@@ -4,20 +4,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101018">
-  <title>Encore — keep the night going</title>
+  <title>Encore: keep the night going</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header class="top"><a class="wordmark" href="/">encore<span>✦</span></a><span class="badge">GROUP NIGHT PLANNER</span></header>
+  <header class="top"><a class="wordmark" href="/">encore<span>✦</span></a><span class="top-note">A group planner for after the show</span></header>
   <main>
-    <section class="hero"><p class="eyebrow">THE SHOW ENDS. THE NIGHT DOESN'T.</p><h1>Find the place <em>everyone</em> wants to go next.</h1><p class="intro">Encore turns a concert, a few tastes, and a changing plan into one group decision.</p></section>
+    <section class="hero"><h1>Find the place <em>everyone</em> wants to go next.</h1><p class="intro">Encore turns a concert, a few tastes, and a changing plan into one group decision.</p></section>
     <div id="notice" class="notice">Prototype mode uses fictional places and provisional taste reasoning. Opening hours and availability are unconfirmed.</div>
-    <section id="start" class="panel"><div class="step">01 / START THE NIGHT</div><h2>What show are we leaving?</h2><form id="start-form"><label>Artist <input name="artist" required maxlength="100" placeholder="e.g. The Marías"></label><label>Venue <select name="venue"><option>Brooklyn Steel</option><option>The Fillmore Philadelphia</option><option>The Salt Shed</option></select></label><button class="primary">Start a group plan <span>↗</span></button></form></section>
+    <section id="start" class="panel"><h2>What show are we leaving?</h2><form id="start-form"><label>Artist <input name="artist" required maxlength="100" placeholder="e.g. The Marías"></label><label>Venue <select name="venue"><option>Brooklyn Steel</option><option>The Fillmore Philadelphia</option><option>The Salt Shed</option></select></label><button class="primary">Start a group plan <span>↗</span></button></form></section>
     <div id="plan" hidden>
-      <section class="panel plan-head"><div class="step">02 / FIND COMMON GROUND</div><h2 id="show-title"></h2><p class="muted">Invite friends with this link, or try the flow by adding a few members yourself.</p><div class="share"><input id="share-url" readonly aria-label="Shareable plan link"><button id="copy-link">Copy link</button></div></section>
+      <section class="panel plan-head"><h2 id="show-title"></h2><p class="muted">Invite friends with this link, or try the flow by adding a few members yourself.</p><div class="share"><input id="share-url" readonly aria-label="Shareable plan link"><button id="copy-link">Copy link</button></div></section>
       <section class="panel"><h2>Add a voice to the plan</h2><form id="member-form" class="grid"><label>Name <input name="name" required maxlength="40" placeholder="Your name"></label><label>One or two things you love <input name="tastes" required placeholder="e.g. jazz, quiet cafés"></label><button class="primary">Add preference</button></form><div id="members" class="members"></div></section>
-      <section class="panel"><div class="section-head"><div><div class="step">03 / CHOOSE TOGETHER</div><h2>The short list</h2></div><span id="source" class="source"></span></div><div id="options" class="options"></div></section>
-      <section class="panel"><div class="step">04 / THE NIGHT CHANGES</div><h2>Need a different plan?</h2><form id="revise-form" class="grid"><label>What changed? <input name="note" maxlength="300" placeholder="Somewhere quieter, with food"></label><label>Max spend per person <input name="budget" type="number" min="1" max="500" placeholder="Optional"></label><label>Walking radius (km) <input name="radiusKm" type="number" min="0.1" max="10" step="0.1" value="2"></label><button class="primary">Replan <span>↗</span></button></form></section>
+      <section class="panel"><div class="section-head"><h2>The short list</h2><span id="source" class="source"></span></div><div id="options" class="options"></div></section>
+      <section class="panel"><h2>Need a different plan?</h2><form id="revise-form" class="grid"><label>What changed? <input name="note" maxlength="300" placeholder="Somewhere quieter, with food"></label><label>Max spend per person <input name="budget" type="number" min="1" max="500" placeholder="Optional"></label><label>Walking radius (km) <input name="radiusKm" type="number" min="0.1" max="10" step="0.1" value="2"></label><button class="primary">Replan <span>↗</span></button></form></section>
     </div>
     <p id="error" role="alert"></p>
   </main>
