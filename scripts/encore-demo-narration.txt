@@ -1,0 +1,13 @@
+At the end of a great show, a group chat can stall fast. Someone wants food, someone wants somewhere quiet, and nobody wants to coordinate another long thread.
+
+Encore is a Discord agent for that moment. When the group asks it to help, Encore can read a short, opt-in snapshot of the channel. It keeps only explicitly stated tastes and practical limits, then discards the raw messages.
+
+This web demo uses the same planning engine. One click starts a realistic concert night after The Marias at Brooklyn Steel. Three friends have already told the group what matters to them: conversation, late-night food, and a calmer place to land.
+
+Encore turns those signals into a compact shortlist. Each option separates the taste rationale from practical details, so the group can see why it fits and what still needs confirmation.
+
+Each person gets one current vote. Here, Alex votes for Night Owl Cafe, so the group has a visible leading choice instead of a vague pile of messages.
+
+Then the plan changes, as it usually does. A lower budget and a quieter mood become enforceable constraints. Encore replans the shortlist and keeps the decision moving.
+
+The Discord command, the web demo, and the vote flow all use the same core planner. With a live Qloo key, the production path will replace this provisional fixture data with culturally relevant place discovery.
