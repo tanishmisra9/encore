@@ -6,16 +6,11 @@ const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   await page.goto(baseUrl + '/');
-  await page.locator('input[name="artist"]').fill('The Marías');
-  await page.getByRole('button', { name: 'Start a group plan' }).click();
+  await page.getByRole('button', { name: 'Run the guided demo' }).click();
   await page.getByRole('heading', { name: 'The Marías · Brooklyn Steel' }).waitFor();
   const link = await page.locator('#share-url').inputValue();
-  for (const [name, tastes] of [['Alex', 'quiet cafes, jazz'], ['Sam', 'late-night food'], ['Jo', 'conversation']]) {
-    await page.locator('input[name="name"]').fill(name);
-    await page.locator('input[name="tastes"]').fill(tastes);
-    await page.getByRole('button', { name: 'Add preference' }).click();
-    await page.locator('.member').filter({ hasText: name }).waitFor();
-  }
+  await page.locator('.member').filter({ hasText: 'Alex' }).waitFor();
+  assert.equal(await page.locator('.member').count(), 3);
   assert.equal(await page.locator('.option').count(), 3);
   await page.locator('.option').first().locator('select').selectOption({ label: 'Alex' });
   await page.locator('.option').first().getByRole('button', { name: 'Vote' }).click();
@@ -32,7 +27,7 @@ try {
   const second = await browser.newPage();
   await second.goto(baseUrl + '/');
   await second.locator('input[name="artist"]').fill('Another Artist');
-  await second.getByRole('button', { name: 'Start a group plan' }).click();
+  await second.getByRole('button', { name: 'Create the plan' }).click();
   assert.notEqual(await second.locator('#share-url').inputValue(), link);
   console.log('Browser flow passed:', link);
 } finally { await browser.close(); }

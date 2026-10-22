@@ -3,25 +3,44 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101018">
-  <title>Encore: keep the night going</title>
+  <meta name="theme-color" content="#171420">
+  <title>Encore: decide what happens after the show</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header class="top"><a class="wordmark" href="/">encore<span>✦</span></a><span class="top-note">A group planner for after the show</span></header>
-  <main>
-    <section class="hero"><h1>Find the place <em>everyone</em> wants to go next.</h1><p class="intro">Encore turns a concert, a few tastes, and a changing plan into one group decision.</p></section>
-    <div id="notice" class="notice">Prototype mode uses fictional places and provisional taste reasoning. Opening hours and availability are unconfirmed.</div>
-    <section id="start" class="panel"><h2>What show are we leaving?</h2><form id="start-form"><label>Artist <input name="artist" required maxlength="100" placeholder="e.g. The Marías"></label><label>Venue <select name="venue"><option>Brooklyn Steel</option><option>The Fillmore Philadelphia</option><option>The Salt Shed</option></select></label><button class="primary">Start a group plan <span>↗</span></button></form></section>
-    <div id="plan" hidden>
-      <section class="panel plan-head"><h2 id="show-title"></h2><p class="muted">Invite friends with this link, or try the flow by adding a few members yourself.</p><div class="share"><input id="share-url" readonly aria-label="Shareable plan link"><button id="copy-link">Copy link</button></div></section>
-      <section class="panel"><h2>Add a voice to the plan</h2><form id="member-form" class="grid"><label>Name <input name="name" required maxlength="40" placeholder="Your name"></label><label>One or two things you love <input name="tastes" required placeholder="e.g. jazz, quiet cafés"></label><button class="primary">Add preference</button></form><div id="members" class="members"></div></section>
-      <section class="panel"><div class="section-head"><h2>The short list</h2><span id="source" class="source"></span></div><div id="options" class="options"></div></section>
-      <section class="panel"><h2>Need a different plan?</h2><form id="revise-form" class="grid"><label>What changed? <input name="note" maxlength="300" placeholder="Somewhere quieter, with food"></label><label>Max spend per person <input name="budget" type="number" min="1" max="500" placeholder="Optional"></label><label>Walking radius (km) <input name="radiusKm" type="number" min="0.1" max="10" step="0.1" value="2"></label><button class="primary">Replan <span>↗</span></button></form></section>
-    </div>
+  <a class="skip-link" href="#main-content">Skip to planner</a>
+  <header class="top"><a class="wordmark" href="/">ENCORE</a><a class="top-link" href="#manual-start">Start your own plan</a></header>
+  <main id="main-content">
+    <section id="start" class="landing">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <h1>Keep the group moving after the <em>encore.</em></h1>
+          <p class="intro">Encore reads the moment only when invited, turns stated tastes into a short list, and helps everyone make one decision together.</p>
+          <div class="hero-actions"><button id="run-demo" class="primary">Run the guided demo</button><a class="text-link" href="#manual-start">Or start from scratch</a></div>
+          <p class="provisional-note">This public prototype uses fictional places while Qloo access is being verified. Details such as hours and availability stay unconfirmed.</p>
+        </div>
+        <aside class="chat-preview" aria-label="Example Encore Discord conversation">
+          <div class="chat-head"><span>DISCORD</span><strong># brooklyn-steel</strong><span>11:06 PM</span></div>
+          <div class="chat-message"><b class="avatar magenta">A</b><p><strong>Alex</strong><br>Anything quiet where we can actually talk?</p></div>
+          <div class="chat-message"><b class="avatar blue">S</b><p><strong>Sam</strong><br>Food, please. I am starving.</p></div>
+          <div class="chat-message"><b class="avatar yellow">J</b><p><strong>Jo</strong><br>Not another loud bar.</p></div>
+          <div class="agent-reply"><div class="agent-name">ENCORE</div><p>I can turn that into a short list. I will only use the latest 25 messages if you ask me to.</p><div class="command">/encore The Marías · Brooklyn Steel</div></div>
+        </aside>
+      </div>
+      <section class="demo-path" aria-label="How Encore works"><div><span>01</span><h2>Invite Encore</h2><p>A single slash command starts the plan in the channel.</p></div><div><span>02</span><h2>Hear the group</h2><p>Only explicit tastes and practical limits become signals.</p></div><div><span>03</span><h2>Make a call</h2><p>Vote, share the choice, then replan when the night changes.</p></div></section>
+      <section id="manual-start" class="manual-start"><div><h2>What show are you leaving?</h2><p>Build a shareable plan for your group.</p></div><form id="start-form"><label>Artist <input name="artist" required maxlength="100" placeholder="e.g. The Marías"></label><label>Venue <select name="venue"><option>Brooklyn Steel</option><option>The Fillmore Philadelphia</option><option>The Salt Shed</option></select></label><button class="primary">Create the plan</button></form></section>
+    </section>
+    <section id="plan" class="planner" hidden>
+      <div class="planner-title"><div><h1 id="show-title"></h1><p id="plan-summary" class="planner-summary">Bring in a few voices, then make the call.</p></div><a class="text-link" href="/">New plan</a></div>
+      <div id="notice" class="notice">Prototype mode uses fictional places and provisional taste reasoning. Opening hours and availability are unconfirmed.</div>
+      <section class="planner-section share-section"><div><h2>Invite the group</h2><p>Every member can add a taste and cast one current vote.</p></div><div class="share"><input id="share-url" readonly aria-label="Shareable plan link"><button id="copy-link">Copy link</button></div></section>
+      <section class="planner-section voices"><div class="section-heading"><div><h2>What your group actually said</h2></div><span id="member-count" class="count"></span></div><form id="member-form" class="member-form"><label>Name <input name="name" required maxlength="40" placeholder="Your name"></label><label>One or two things you love <input name="tastes" required placeholder="e.g. jazz, quiet cafés"></label><button class="primary">Add preference</button></form><div id="members" class="members"></div></section>
+      <section class="planner-section shortlist"><div class="section-heading"><div><h2>Places that can hold the night</h2></div><span id="source" class="source"></span></div><div id="options" class="options"></div></section>
+      <section class="planner-section replan"><div><h2>Plans change. Encore does too.</h2><p>Adjust the practical limits and create a new shortlist.</p></div><form id="revise-form" class="revise-form"><label>What changed? <input name="note" maxlength="300" placeholder="Somewhere quieter, with food"></label><label>Max spend per person <input name="budget" type="number" min="1" max="500" placeholder="Optional"></label><label>Walking radius (km) <input name="radiusKm" type="number" min="0.1" max="10" step="0.1" value="2"></label><button class="primary">Replan</button></form></section>
+    </section>
     <p id="error" role="alert"></p>
   </main>
-  <footer>Encore is an early hackathon prototype. Fictional demo places are marked; check real-world details before you go. <span><a href="/privacy.html">Privacy</a> · Made for Qloo Agentic Hackathon.</span></footer>
+  <footer>Encore is an early hackathon prototype. Fictional demo places are marked. Check real-world details before you go. <span><a href="/privacy.html">Privacy</a> · Made for Qloo Agentic Hackathon.</span></footer>
   <script type="module" src="/app.js"></script>
 </body>
 </html>
