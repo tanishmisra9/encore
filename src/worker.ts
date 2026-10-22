@@ -1,7 +1,8 @@
 import { VENUES, sanitizeSession, vote, winner, type Member, type Session } from './core';
 import { recommend } from './providers';
+import { handleDiscord } from './discord';
 
-type Env = { DB: D1Database; ASSETS: Fetcher; OPENAI_API_KEY?: string; QLOO_API_KEY?: string; DISCORD_PUBLIC_KEY?: string; DISCORD_BOT_TOKEN?: string };
+type Env = { DB: D1Database; ASSETS: Fetcher; OPENAI_API_KEY?: string; QLOO_API_KEY?: string; DISCORD_PUBLIC_KEY?: string; DISCORD_BOT_TOKEN?: string; DISCORD_APPLICATION_ID?: string };
 const json = (value: unknown, status = 200) => Response.json(value, { status, headers: { 'Cache-Control': 'no-store' } });
 const bad = (message: string, status = 400) => json({ error: message }, status);
 
@@ -43,6 +44,7 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
   const old = await readPlan(env.DB, match[1]);
   if (!old) return bad('Plan not found or expired', 404);
   if (!match[2] && request.method === 'GET') return json({ ...old, winner: winner(old) });
+  if (old.discord) return bad('Discord plans can only be changed in Discord.', 403);
   if (request.method !== 'POST') return bad('Method not allowed', 405);
   const body = await request.json() as Record<string,unknown>;
   let next: Session;
@@ -70,13 +72,20 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     try {
+      if (new URL(request.url).pathname === '/discord/interactions' && request.method === 'POST')
+        return await handleDiscord(request, env, ctx, {
+          read: id => readPlan(env.DB, id), insert: plan => insertPlan(env.DB, plan), update: (old, next) => updatePlan(env.DB, old, next),
+        });
       if (new URL(request.url).pathname.startsWith('/api/')) return await handleApi(request, env);
       return env.ASSETS.fetch(request);
     } catch (error) {
       console.error(error);
       return bad('Something went wrong. Please try again.', 500);
     }
+  },
+  async scheduled(_event: ScheduledController, env: Env): Promise<void> {
+    await env.DB.prepare('DELETE FROM plans WHERE expires_at <= ?').bind(Date.now()).run();
   },
 } satisfies ExportedHandler<Env>;

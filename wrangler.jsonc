@@ -3,5 +3,6 @@
   "main": "src/worker.ts",
   "compatibility_date": "2026-10-22",
   "assets": { "directory": "./public", "binding": "ASSETS" },
-  "d1_databases": [{ "binding": "DB", "database_name": "encore", "database_id": "REPLACE_AFTER_CREATE" }]
+  "triggers": { "crons": ["0 4 * * *"] },
+  "d1_databases": [{ "binding": "DB", "database_name": "encore", "database_id": "17e007a9-3a53-466e-851b-3725a75f2c5f" }]
 }

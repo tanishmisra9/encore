@@ -6,6 +6,7 @@ export type Session = {
   members: Member[]; note: string; budget?: number; radiusKm: number;
   options: Option[]; votes: Record<string, string>; source: 'fixture' | 'provisional' | 'qloo';
   createdAt: number; version: number;
+  discord?: { channelId: string; contextRead: number; statements: number };
 };
 
 export const VENUES = [
