@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEMO_PLACES, filterPlaces, sanitizeSession, vote, winner, type Session } from '../src/core';
+import { DEMO_LOCATION, DEMO_PLACES, filterPlaces, resolveLocation, sanitizeSession, signalsFor, vote, winner, type Session } from '../src/core';
 
-const base: Session = { id: 'x', artist: 'Artist', venue: 'Brooklyn Steel', venueLat: 40.7285, venueLon: -73.9386,
+const base: Session = { id: 'x', request: 'What should we do in Williamsburg tonight?', location: DEMO_LOCATION,
   members: [{ id: 'a', name: 'A', tastes: ['quiet'] }, { id: 'b', name: 'B', tastes: ['food'] }],
-  note: '', radiusKm: 2, options: [], votes: {}, source: 'fixture', createdAt: 0, version: 0 };
+  signals: [], note: '', radiusKm: 2, options: [], votes: {}, source: 'fixture', createdAt: 0, version: 0 };
 
 test('distance and budget constraints cannot be overruled by ranking', () => {
   assert.equal(filterPlaces({ ...base, budget: 20 }, DEMO_PLACES).length, 2);
@@ -12,8 +12,14 @@ test('distance and budget constraints cannot be overruled by ranking', () => {
   assert.equal(filterPlaces({ ...base, budget: 1 }, DEMO_PLACES).length, 0);
 });
 
+test('location and explicit signals stay bounded', () => {
+  assert.equal(resolveLocation('What should we do in Williamsburg tonight?')?.label, 'Williamsburg, Brooklyn');
+  assert.equal(resolveLocation('What should we do tonight?'), null);
+  assert.deepEqual(signalsFor(base.members, 'Under $35').map(signal => signal.value), ['quiet', 'food', 'Under $35']);
+});
+
 test('vote is one per member and invalid choices fail', () => {
-  const session = { ...base, options: [{ ...DEMO_PLACES[0], score: 1, reason: '', distanceKm: 0.1 }] };
+  const session: Session = { ...base, options: [{ ...DEMO_PLACES[0], score: 1, reason: '', appealsTo: [], distanceKm: 0.1 }] };
   const once = vote(session, 'a', 'demo-1');
   const twice = vote(once, 'a', 'demo-1');
   assert.equal(Object.keys(twice.votes).length, 1);
