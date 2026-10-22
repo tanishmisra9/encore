@@ -31,7 +31,11 @@ async function openaiRank(session: Session, places: Place[], key?: string): Prom
   const ranking = JSON.parse(raw) as { results: Array<{ id: string; score: number; reason: string }> };
   const byId = new Map(filtered.map(place => [place.id, place]));
   return ranking.results.filter(item => byId.has(item.id) && Number.isFinite(item.score))
-    .map(item => ({ ...byId.get(item.id)!, score: Math.max(0, Math.min(5, item.score)), reason: item.reason.slice(0, 220) }))
+    .map(item => {
+      const place = byId.get(item.id)!;
+      const matched = place.tags.filter(tag => session.members.some(member => member.tastes.some(taste => taste.toLowerCase().includes(tag.toLowerCase()))));
+      return { ...place, score: Math.max(0, Math.min(5, item.score)), reason: matched.length ? `Shared preference: ${matched.join(', ')}. Provisional match based on supplied place tags.` : 'Provisional match based on supplied place tags; no direct shared preference verified.' };
+    })
     .sort((a,b) => b.score - a.score).slice(0, 3);
 }
 
