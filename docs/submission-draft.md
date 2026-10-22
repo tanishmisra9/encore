@@ -2,33 +2,27 @@
 
 ## Tagline
 
-**Encore turns “what should we do after the show?” into a group decision with taste, constraints, and a vote.**
+**A Discord planner that finds the cultural overlap in a group chat.**
 
 ## The problem
 
-Concert plans fall apart right after the encore. A group chat has scattered preferences, someone has a walking limit, another person has a budget, and the answer turns into a list of links that nobody chooses from.
+Group chats contain plenty of ideas. The hard part is reconciling them. One person wants quiet conversation, another wants food, another wants the night to feel special. The result is usually a thread of links and no decision.
 
-Encore begins where the show ends. Run `/encore`, optionally let it read the latest 25 channel messages once, add a taste, vote, and replan if the night changes. It keeps raw chat out of storage and shows unknown hours and availability as unconfirmed.
+## What Encore does
 
-## Why this needs Qloo
+Encore turns a natural Discord request into a local social plan. A group can authorize a one-time scan of its latest 25 messages. Encore keeps explicit tastes and practical limits, discards raw messages, finds a Qloo-grounded shortlist, and lets the group vote or replan.
 
-Distance sorting can find close places. It cannot explain which one fits the group after this artist at this venue. Encore resolves the performing artist through Qloo Search and sends that cultural anchor to Qloo Insights with a bounded venue location. If Qloo is unavailable, Encore surfaces that state. It does not quietly replace Qloo with generic results in the submitted Qloo mode.
+## Why Qloo is essential
 
-## How it works
+A generic model can suggest nearby places. Encore needs Qloo to connect cultural references across people and identify nearby places that bridge them. Qloo Search resolves entities, Tags resolves usable taste signals, and Insights supplies local candidates. If Qloo is unavailable, production Encore asks for clarification or reports unavailable.
 
-1. A Discord user starts `/encore` with artist, venue, and an explicit choice to read the recent chat window.
-2. Encore retains only explicit preference statements and concrete limits. Raw channel messages are discarded.
-3. Qloo provides nearby culturally relevant places from the artist and venue context.
-4. Code enforces walking radius, budget, valid voters, and one current vote each.
-5. The group sees taste rationale separately from practical information and can revise the plan.
+## How we built it
 
-## What we built
-
-- Discord HTTP interactions with Ed25519 signature verification and immediate deferred responses.
-- A public Cloudflare Worker demo backed by D1, including a no-key fixture flow for judges.
-- A seven-day plan expiry policy and an in-product privacy explanation.
-- A Qloo adapter that uses `/search` for the artist and `/v2/insights` for nearby places.
+- Signed Discord interactions and immediate deferred responses.
+- Cloudflare Worker and D1 state with seven-day expiry.
+- A strict separation between model extraction, Qloo cultural grounding, deterministic constraints, and human approval.
+- A public silent replay, focused logged-out demo route, and Discord demo flow.
 
 ## Honest limits
 
-The public demo is explicitly provisional until a Qloo key is configured. Fictional demo places are clearly labeled. Encore does not claim opening hours, availability, booking, or a measured Qloo improvement before the planned blinded evaluation is complete.
+Encore never claims booking, hours, availability, or price without data. It does not claim a measured Qloo lift until the documented blind comparison is complete.

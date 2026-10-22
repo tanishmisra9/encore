@@ -28,7 +28,8 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   if (url.pathname === '/api/demo' && request.method === 'POST') {
     const plan = demoSession();
-    const rec = await recommend(plan, env);
+    const fixture = url.searchParams.get('fixture') === '1' && ['localhost', '127.0.0.1'].includes(url.hostname);
+    const rec = await recommend(plan, env, fixture ? 'fixture' : 'production');
     Object.assign(plan, rec);
     await insertPlan(env.DB, plan);
     return json(plan, 201);
@@ -51,7 +52,8 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
     const note = clean(body.note);
     if (radiusKm === undefined || (body.budget !== undefined && body.budget !== '' && body.budget !== null && budget === undefined)) return bad('Budget or walking radius is invalid.');
     next = { ...old, note, budget, radiusKm, signals: signalsFor(old.members, note), votes: {}, version: old.version + 1 };
-    const rec = await recommend(next, env);
+    const fixture = old.source === 'fixture' && ['localhost', '127.0.0.1'].includes(url.hostname);
+    const rec = await recommend(next, env, fixture ? 'fixture' : 'production');
     next = sanitizeSession({ ...next, ...rec });
   }
   if (!await updatePlan(env.DB, old, next)) return bad('Plan changed. Refresh and try again.', 409);

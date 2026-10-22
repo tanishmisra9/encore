@@ -1,46 +1,40 @@
 # Encore
 
-Encore helps a Discord concert group decide where to go after a show. One person starts `/encore`, participants add tastes, the group votes, and the plan can change when the night does.
+**Group chats have ideas. Encore gets a plan.**
 
-The public web demo exercises the same planning engine without requiring a Discord server.
+Encore is a Discord agent for local social plans. A group asks what to do nearby, optionally authorizes a one-time read of its recent chat, and receives a Qloo-grounded shortlist it can vote on or revise.
 
-## What Encore does
+## What it does
 
-- Reads up to 25 recent channel messages only when `/encore use_recent_chat:true` is requested.
-- Extracts explicit statements such as “I prefer quiet cafés,” then discards raw chat content.
-- Shows taste rationale separately from practical details such as distance, price, and unconfirmed hours.
-- Enforces budget and walking radius in code, records one current vote per person, and clears votes when the plan changes.
-- Deletes expired plans after seven days.
+- Starts with `/encore ask:"what should we do in Williamsburg tonight?"`.
+- Reads at most 25 recent messages only when `use_recent_chat:true` is selected.
+- Retains explicit tastes and practical limits, then discards raw message content.
+- Uses Qloo entity search, tags, and Insights to find nearby cultural overlap.
+- Enforces distance, budget, current votes, plan ownership, and expiry in TypeScript.
+- Separates group-fit reasoning from practical facts and marks unavailable details as unconfirmed.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  D[Discord /encore] --> V[Signature verification]
-  V --> C{Recent chat enabled?}
-  C -->|yes| H[Read latest 25 messages once]
-  H --> X[Extract explicit tastes and limits]
-  C -->|no| X
-  X --> P[Plan in D1]
-  P --> Q[Qloo Search and Insights]
-  Q --> R[Constraint filter and voting]
+  D[Discord request] --> V[Signature verification]
+  V --> C{Recent chat authorized?}
+  C -->|yes| H[Read up to 25 messages once]
+  C -->|no| S[Stated group signals]
+  H --> S
+  S --> Q[Qloo Search, Tags, and Insights]
+  Q --> R[Constraint filter and vote state]
   R --> D
-  W[Web demo] --> P
+  W[Logged-out demo] --> R
 ```
 
 | Decision | Owner | Guardrail |
 | --- | --- | --- |
-| Turn stated chat into candidate preferences | Extractor | Stores only short extracted statements, never raw message text |
-| Cultural and local candidate ranking | Qloo | Production path returns unavailable if Qloo fails |
-| Radius and budget | TypeScript | Filters candidates before they reach the voter |
-| Vote validity and count | TypeScript | One current vote per known member |
-| Opening hours and booking | Human | Always shown as unconfirmed unless data is supplied |
-
-## Data sources
-
-Until a Qloo key is available, the public demo uses fictional places and labels results as provisional. Local development can use a small OpenStreetMap Overpass query through `recommend(..., 'live')`; automated tests only use fixtures.
-
-When `QLOO_API_KEY` is configured, Encore resolves the artist with Qloo `/search`, then uses Qloo `/v2/insights` to rank nearby places. A Qloo error is shown as unavailable; it never silently falls back to generic recommendations.
+| Extract stated signals | Model or parser | Raw Discord text is not stored |
+| Cultural and local matching | Qloo | Production fails visibly when Qloo is unavailable |
+| Budget, radius, vote validity | TypeScript | Filters run before users vote |
+| Final choice | Group | One current vote per member |
+| Hours, availability, booking | Human | Unknown details stay unconfirmed |
 
 ## Run locally
 
@@ -50,58 +44,47 @@ npx wrangler d1 migrations apply encore --local
 npm run dev
 ```
 
-Open `http://localhost:8787`.
+Run checks:
 
 ```sh
+npm run check
 npm test
-node test/browser.mjs
+BASE_URL=http://localhost:8787 node test/browser.mjs
 ```
 
-## Configure Discord
+The browser test uses `?fixture=1`, which the Worker accepts only on localhost. Deployed requests require `QLOO_API_KEY` and never fall back to fixture recommendations.
 
-Create a Discord application and configure the following worker values:
+## Configure Discord and Qloo
 
 ```text
 DISCORD_APPLICATION_ID=<application id>
 DISCORD_PUBLIC_KEY=<public key>
-DISCORD_BOT_TOKEN=<bot token, kept only in .env and Cloudflare secrets>
+DISCORD_BOT_TOKEN=<bot token>
+QLOO_API_KEY=<hackathon key>
 ```
 
-Enable Message Content Intent, and grant View Channels, Send Messages, and Read Message History. Set the interaction endpoint to:
+Enable Message Content Intent. Grant View Channels, Send Messages, Read Message History, and application-command access. Configure the interaction endpoint:
 
 ```text
 https://<worker>.<subdomain>.workers.dev/discord/interactions
 ```
 
-Then register the command:
+Register the command after setting the bot token:
 
 ```sh
 npm run discord:register
 ```
 
-The command accepts an artist, one of the demo venues, and an optional `use_recent_chat` checkbox.
-
-## Deploy
-
-```sh
-npx wrangler d1 migrations apply encore --remote
-npx wrangler deploy
-```
-
-Set secrets through Wrangler, never in `wrangler.jsonc`:
+Set production secrets through Wrangler:
 
 ```sh
 npx wrangler secret put DISCORD_BOT_TOKEN
 npx wrangler secret put QLOO_API_KEY
 ```
 
-## Privacy
+## Demo and evidence
 
-Read the live policy at `/privacy.html`. A shared demo link can be edited by anyone who has it, so do not add personal or sensitive information to a plan.
-
-## Evaluation and submission notes
-
-The fixed evaluation protocol is in [`docs/evaluation.md`](docs/evaluation.md). A fact-checked starting point for the Devpost entry is in [`docs/submission-draft.md`](docs/submission-draft.md).
+The public homepage is a silent replay. `/demo.html` is the focused live flow. The fixed evaluation protocol, including a Qloo versus OpenAI-only blind comparison, is in [`docs/evaluation.md`](docs/evaluation.md). The submission draft and skeptical judge audit are in [`docs/submission-draft.md`](docs/submission-draft.md) and [`docs/judge-audit.md`](docs/judge-audit.md).
 
 ## License
 

@@ -1,28 +1,32 @@
 # Evaluation protocol
 
-Encore has two modes:
+## Question
 
-| Mode | Candidate source | Ranking signal | Result label |
-| --- | --- | --- | --- |
-| Provisional | Fictional fixtures during the hosted demo, or OpenStreetMap during local development | Supplied tags plus optional OpenAI reasoning | `PROVISIONAL DEMO` |
-| Qloo | Qloo `/search` and `/v2/insights` | Artist affinity, bounded by venue radius | `QLOO-POWERED` |
+Does Qloo produce a more culturally coherent local compromise than the same planner with generic ranking?
+
+## Modes
+
+| Mode | Candidate source | Label |
+| --- | --- | --- |
+| Qloo | `/search`, `/v2/tags`, and `/v2/insights` | `QLOO-POWERED` |
+| Baseline | Identical constraints with generic ranking | `BASELINE` |
+
+Production Encore does not use the baseline. It displays unavailable or clarification states when Qloo cannot produce candidates.
 
 ## Fixed scenarios
 
-Run every scenario in both modes after Qloo access is available.
+| Request | Explicit signals | Revision |
+| --- | --- | --- |
+| What should we do in Williamsburg tonight? | quiet jazz, late-night food, a real night out | quieter, under $35 |
+| Where should our visiting friends go nearby? | thoughtful wine, conversation, local music | within 1 km |
+| What should the team do after work? | casual food, low noise, no expensive cocktails | under $30 |
 
-| Artist | Venue | Group statements | Constraint change |
-| --- | --- | --- | --- |
-| The Marías | Brooklyn Steel | “I prefer quiet cafés”; “I want late night food” | Under $20 per person |
-| The National | The Fillmore Philadelphia | “I love conversation”; “I prefer a drink” | Radius 1 km |
-| Kaytranada | The Salt Shed | “I want somewhere lively”; “I need food” | Quiet place after 11 p.m. |
+## Blind review
 
-## Judging procedure
+For each completed scenario, show three blinded reviewers the request, explicit signals, constraints, and randomized Qloo and baseline shortlists. Each reviewer selects the list that best fits the group and records a sentence explaining why.
 
-Give three blinded reviewers the artist, venue, stated preferences, and the two three-place lists in randomized order. Each reviewer chooses the list that best fits the group and records a one-sentence reason. Record ties and failures. Do not count a place as open, bookable, or within budget unless that fact is independently verified.
-
-Report the number of completed comparisons, the winner count for each source, ties, and every mismatch. The repository does not claim a Qloo lift until this procedure is completed with the issued key.
+Report reviewer count, scenario count, Qloo wins, baseline wins, ties, latency, unresolved requests, and every mismatch. Do not claim improvement until these results exist.
 
 ## Deterministic checks
 
-`npm test` checks that distance and budget constraints survive ranking, votes are constrained to one current vote per member, Discord signatures reject tampering, raw chat content is discarded after extraction, and the Qloo path never falls back to provisional data after a Qloo failure.
+`npm test` verifies context limits, raw-chat exclusion, location follow-up, Qloo tag and entity use, constraint filtering, vote validity, revision behavior, and failure without a production fallback.
