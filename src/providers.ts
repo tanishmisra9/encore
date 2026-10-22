@@ -45,6 +45,43 @@ export async function recommend(session: Session, env: EnvKeys, mode: 'fixture' 
   return { options: await openaiRank(session, places, env.OPENAI_API_KEY), source: mode === 'live' ? 'provisional' : 'fixture' };
 }
 
-async function qlooRank(_session: Session, _key: string): Promise<Option[]> {
-  throw new Error('Qloo adapter awaits a verified API key and live contract test');
+type QlooEntity = { entity_id?: string; name?: string; subtype?: string; properties?: Record<string, any>; location?: Record<string, number>; tags?: Array<{ name?: string }>; query?: { affinity?: number; affinity_rank?: number } };
+async function qlooGet(path: string, params: URLSearchParams, key: string): Promise<any> {
+  const response = await fetch(`https://hackathon.api.qloo.com${path}?${params}`, { headers: { 'X-Api-Key': key } });
+  if (!response.ok) throw new Error(`Qloo unavailable (${response.status})`);
+  return response.json();
+}
+function entities(data: any): QlooEntity[] {
+  const items = data?.results?.entities || data?.results || [];
+  return Array.isArray(items) ? items : [];
+}
+function coordinates(entity: QlooEntity): { lat: number; lon: number } | null {
+  const location = entity.properties?.location || entity.location || entity.properties?.geocode?.location || entity.properties?.geocode;
+  const lat = Number(location?.latitude ?? location?.lat);
+  const lon = Number(location?.longitude ?? location?.lng ?? location?.lon);
+  return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? { lat, lon } : null;
+}
+async function qlooRank(session: Session, key: string): Promise<Option[]> {
+  const searched = await qlooGet('/search', new URLSearchParams({ query: session.artist, types: 'urn:entity:artist', take: '5' }), key);
+  const anchor = entities(searched).find(entity => entity.subtype === 'urn:entity:artist' && entity.name?.toLowerCase() === session.artist.toLowerCase())
+    || entities(searched).find(entity => entity.subtype === 'urn:entity:artist');
+  if (!anchor?.entity_id) throw new Error('Qloo could not resolve the artist');
+  const params = new URLSearchParams({
+    'filter.type': 'urn:entity:place', 'signal.interests.entities': anchor.entity_id,
+    'filter.location': `POINT(${session.venueLon} ${session.venueLat})`,
+    'filter.location.radius': String(Math.ceil(session.radiusKm * 1000)), take: '30',
+  });
+  const result = await qlooGet('/v2/insights', params, key);
+  const places: Place[] = entities(result).flatMap(entity => {
+    const point = coordinates(entity);
+    if (!point || !entity.entity_id || !entity.name) return [];
+    return [{ id: `qloo-${entity.entity_id}`, name: entity.name, ...point, category: entity.subtype || 'place',
+      hours: undefined, tags: (entity.tags || []).map(tag => tag.name).filter((tag): tag is string => !!tag) }];
+  });
+  const filtered = filterPlaces(session, places);
+  const byId = new Map(entities(result).map(entity => [`qloo-${entity.entity_id}`, entity]));
+  return filtered.sort((a, b) => (byId.get(b.id)?.query?.affinity_rank ?? byId.get(b.id)?.query?.affinity ?? 0)
+    - (byId.get(a.id)?.query?.affinity_rank ?? byId.get(a.id)?.query?.affinity ?? 0)).slice(0, 3)
+    .map((place, index) => ({ ...place, score: 3 - index,
+      reason: `Qloo taste affinity from ${anchor.name}. Group preferences are shown separately and are not verified by this match.` }));
 }
