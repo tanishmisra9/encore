@@ -2,7 +2,8 @@ import { resolveLocation, sanitizeSession, signalsFor, vote, winner, type Member
 import { recommend, type EnvKeys } from './providers';
 
 type DiscordEnv = EnvKeys & { DISCORD_PUBLIC_KEY?: string; DISCORD_BOT_TOKEN?: string; DISCORD_APPLICATION_ID?: string };
-type Store = { read(id: string): Promise<Session | null>; insert(plan: Session): Promise<void>; update(old: Session, next: Session): Promise<boolean> };
+export type LocationHandoff = { id: string; channelId: string; request: string; userId: string; useRecentChat: boolean; expiresAt: number };
+type Store = { read(id: string): Promise<Session | null>; insert(plan: Session): Promise<void>; update(old: Session, next: Session): Promise<boolean>; createHandoff(handoff: LocationHandoff): Promise<void> };
 type Interaction = { type: number; id: string; token: string; application_id: string; channel_id?: string; member?: { user: DiscordUser }; user?: DiscordUser; message?: { id: string }; data?: { name?: string; custom_id?: string; options?: Array<{ name: string; value: string | boolean }>; components?: Array<{ components?: Array<{ custom_id: string; value: string }> }> } };
 type DiscordUser = { id: string; username: string; global_name?: string };
 const reply = (type: number, data?: object) => Response.json(data ? { type, data } : { type });
@@ -54,17 +55,34 @@ async function contextMembers(channelId: string, token: string, enabled: boolean
   }
   return { members: [...byId.values()].slice(0, 8), read: Math.min(messages.length, 25), statements, budget, radiusKm };
 }
-async function processCommand(interaction: Interaction, env: DiscordEnv, store: Store): Promise<void> {
+async function processCommand(interaction: Interaction, env: DiscordEnv, store: Store, origin: string): Promise<void> {
   const options = Object.fromEntries((interaction.data?.options || []).map(option => [option.name, option.value]));
   const request = clip(options.ask, 300), location = resolveLocation(request);
   if (!request || !interaction.channel_id || !env.DISCORD_BOT_TOKEN) throw new Error('A request, channel, and bot token are required.');
-  if (!location) return editOriginal(interaction, { content: 'Encore needs a neighborhood before it can plan. Try `/encore ask:"what should we do in Williamsburg tonight?"`.' });
+  if (!location) {
+    const user = interaction.member?.user || interaction.user;
+    if (!user) throw new Error('Discord user missing');
+    const handoff: LocationHandoff = { id: crypto.randomUUID(), channelId: interaction.channel_id, request, userId: user.id, useRecentChat: options.use_recent_chat === true, expiresAt: Date.now() + 10 * 60_000 };
+    await store.createHandoff(handoff);
+    const url = `${origin}/locate.html?handoff=${handoff.id}`;
+    return editOriginal(interaction, { content: 'Share your current location to plan nearby. Encore will use it for this plan only, then post the shortlist here.', components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Use my location', url }] }] });
+  }
   const context = await contextMembers(interaction.channel_id, env.DISCORD_BOT_TOKEN, options.use_recent_chat === true);
   if (!context.members.length) return editOriginal(interaction, { content: 'Encore needs one stated group taste. Start with `use_recent_chat:true`, or tell the group what each person wants before trying again.' });
   const plan: Session = { id: crypto.randomUUID(), request, location, members: context.members, signals: signalsFor(context.members), note: '', budget: context.budget, radiusKm: context.radiusKm || 2, options: [], votes: {}, source: 'qloo', createdAt: Date.now(), version: 0, discord: { channelId: interaction.channel_id, contextRead: context.read, statements: context.statements } };
   Object.assign(plan, await recommend(plan, env));
   await store.insert(plan); await editOriginal(interaction, display(plan));
 }
+export async function completeLocation(handoff: LocationHandoff, location: { lat: number; lon: number }, env: DiscordEnv, store: Store): Promise<void> {
+  if (!env.DISCORD_BOT_TOKEN) throw new Error('Discord bot is not configured');
+  const context = await contextMembers(handoff.channelId, env.DISCORD_BOT_TOKEN, handoff.useRecentChat);
+  if (!context.members.length) throw new Error('Encore needs one stated group taste. Run the command with use_recent_chat enabled after the group shares what it wants.');
+  const plan: Session = { id: crypto.randomUUID(), request: handoff.request, location: { label: 'Shared current location', ...location }, members: context.members, signals: signalsFor(context.members), note: '', budget: context.budget, radiusKm: context.radiusKm || 2, options: [], votes: {}, source: 'qloo', createdAt: Date.now(), version: 0, discord: { channelId: handoff.channelId, contextRead: context.read, statements: context.statements } };
+  Object.assign(plan, await recommend(plan, env));
+  await store.insert(plan);
+  await discordApi(`/channels/${handoff.channelId}/messages`, env.DISCORD_BOT_TOKEN, 'POST', display(plan));
+}
+
 async function updateMessage(interaction: Interaction, env: DiscordEnv, messageId: string, plan: Session): Promise<void> {
   if (!env.DISCORD_BOT_TOKEN || !plan.discord) throw new Error('Discord bot is not configured');
   await discordApi(`/channels/${plan.discord.channelId}/messages/${messageId}`, env.DISCORD_BOT_TOKEN, 'PATCH', display(plan));
@@ -84,7 +102,12 @@ export async function handleDiscord(request: Request, env: DiscordEnv, ctx: Exec
   if (!env.DISCORD_PUBLIC_KEY) return new Response('Discord is not configured', { status: 503 });
   const raw = await verified(request, env.DISCORD_PUBLIC_KEY); if (raw === null) return new Response('Invalid signature', { status: 401 });
   const interaction = JSON.parse(raw) as Interaction; if (interaction.type === 1) return reply(1);
-  if (interaction.type === 2 && interaction.data?.name === 'encore') { ctx.waitUntil(processCommand(interaction, env, store).catch(error => editOriginal(interaction, { content: `Encore could not start: ${error instanceof Error ? error.message : 'unknown error'}` }))); return reply(5); }
+  if (interaction.type === 2 && interaction.data?.name === 'encore') {
+    const requestText = clip(interaction.data.options?.find(option => option.name === 'ask')?.value, 300);
+    const flags = resolveLocation(requestText) ? undefined : { flags: 64 };
+    ctx.waitUntil(processCommand(interaction, env, store, new URL(request.url).origin).catch(error => editOriginal(interaction, { content: `Encore could not start: ${error instanceof Error ? error.message : 'unknown error'}` })));
+    return reply(5, flags);
+  }
   const [kind, id, value] = (interaction.data?.custom_id || '').split(':');
   if (interaction.type === 3 && (kind === 'taste' || kind === 'replan') && interaction.message?.id) return reply(9, modal(kind, id, interaction.message.id));
   if (interaction.type === 3 && kind === 'vote' && interaction.message?.id) { ctx.waitUntil(processChange(interaction, env, store, kind, id, value, interaction.message.id).catch(console.error)); return reply(6); }

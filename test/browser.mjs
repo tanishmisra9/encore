@@ -12,6 +12,9 @@ try {
   await page.getByRole('button', { name: 'Replay' }).click();
   await page.screenshot({ path: '/tmp/encore-home.png', fullPage: true });
 
+  await page.goto(baseUrl + '/locate.html');
+  await page.locator('#location-status').filter({ hasText: 'invalid or has expired' }).waitFor();
+
   await page.goto(baseUrl + '/demo.html?fixture=1');
   await page.getByRole('button', { name: 'Start the Friday-night plan' }).click();
   await page.getByRole('heading', { name: 'Places where the night can meet.' }).waitFor();

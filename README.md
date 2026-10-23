@@ -6,7 +6,7 @@ Encore is a Discord agent for local social plans. A group asks what to do nearby
 
 ## What it does
 
-- Starts with `/encore ask:"what should we do in Williamsburg tonight?"`.
+- Starts with `/encore ask:"what should we do tonight?" use_recent_chat:true`. If no location is named, Encore sends the initiator a one-time browser link to share current location.
 - Reads at most 25 recent messages only when `use_recent_chat:true` is selected.
 - Retains explicit tastes and practical limits, then discards raw message content.
 - Uses Qloo entity search, tags, and Insights to find nearby cultural overlap.
@@ -18,7 +18,11 @@ Encore is a Discord agent for local social plans. A group asks what to do nearby
 ```mermaid
 flowchart LR
   D[Discord request] --> V[Signature verification]
-  V --> C{Recent chat authorized?}
+  V --> L{Location named?}
+  L -->|no| G[One-time browser location approval]
+  G --> C
+  L -->|yes| C
+  C{Recent chat authorized?}
   C -->|yes| H[Read up to 25 messages once]
   C -->|no| S[Stated group signals]
   H --> S
@@ -30,6 +34,7 @@ flowchart LR
 
 | Decision | Owner | Guardrail |
 | --- | --- | --- |
+| Resolve current location | Browser permission | No IP location; one-time handoff expires in 10 minutes |
 | Extract stated signals | Model or parser | Raw Discord text is not stored |
 | Cultural and local matching | Qloo | Production fails visibly when Qloo is unavailable |
 | Budget, radius, vote validity | TypeScript | Filters run before users vote |
@@ -52,7 +57,7 @@ npm test
 BASE_URL=http://localhost:8787 node test/browser.mjs
 ```
 
-The browser test uses `?fixture=1`, which the Worker accepts only on localhost. Deployed requests require `QLOO_API_KEY` and never fall back to fixture recommendations.
+The browser test uses `?fixture=1`, which the Worker accepts only on localhost. Deployed requests require `QLOO_API_KEY` and never fall back to fixture recommendations. When a Discord request has no named location, the command responds privately with a 10-minute link to `/locate.html`; that page requests browser location permission and posts the resulting plan to the originating channel.
 
 ## Configure Discord and Qloo
 
