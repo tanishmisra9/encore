@@ -42,7 +42,7 @@ export function distanceKm(a: { lat: number; lon: number }, b: { lat: number; lo
 
 export function filterPlaces(session: Session, places: Place[]): (Place & { distanceKm: number })[] {
   return places.map(place => ({ ...place, distanceKm: distanceKm(session.location, place) }))
-    .filter(place => place.distanceKm <= session.radiusKm && (session.budget === undefined || (place.price !== undefined && place.price <= session.budget)));
+    .filter(place => place.distanceKm <= session.radiusKm && (session.budget === undefined || place.price === undefined || place.price <= session.budget));
 }
 
 export function vote(session: Session, memberId: string, optionId: string): Session {

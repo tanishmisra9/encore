@@ -28,3 +28,8 @@ test('vote is one per member and invalid choices fail', () => {
   assert.throws(() => vote(session, 'a', 'missing'));
   assert.deepEqual(sanitizeSession({ ...once, options: [] }).votes, {});
 });
+
+test('a stated budget keeps places with unknown price and drops known over-budget ones', () => {
+  const places = [{ ...DEMO_PLACES[0], price: undefined }, { ...DEMO_PLACES[1], price: 50 }];
+  assert.deepEqual(filterPlaces({ ...base, budget: 20 }, places).map(place => place.id), [DEMO_PLACES[0].id]);
+});

@@ -3,7 +3,7 @@
 | Criterion | Evidence | Release condition |
 | --- | --- | --- |
 | Working application | Hosted homepage, `/demo.html`, and Discord interaction endpoint | Done 2026-10-22: production `POST /api/demo` returns `source: qloo` with 3 places inside 2 km |
-| Agentic tool | Natural request, optional context, recommendation, vote, and replan loop | Pending: `DISCORD_BOT_TOKEN` is not set, so commands are not registered |
+| Agentic tool | Natural request, optional context, recommendation, vote, and replan loop | `/encore` is registered; the bot has not been invited to a real server yet |
 | Qloo implementation | Entity search, tag lookup, and place Insights form the recommendation path | Production request above; Discord-side trace pending a bot token |
 | Product design | Silent replay, focused demo, privacy disclosure, and square editorial UI | Browser test on desktop and mobile |
 | Impact and originality | Groups resolve competing cultural tastes into a local decision | Blind comparison results |
@@ -31,3 +31,9 @@
 - Persistence: D1 writes only `plans` and `pending_locations` JSON; Session stores extracted tastes and counts, not message text.
 - Repeated logged-out `POST /api/demo`: 19 of 20 returned Qloo results; the miss was the 429 above.
 - Key scan of tree and history: no match.
+- A stated budget removed every Qloo place, because Qloo returns no dollar price for most venues. Found by the sandbox's `budget under $40` seed; unknown price now passes and is shown as unconfirmed.
+- Qloo 429s now retry twice with backoff, and identical Qloo lookups are cached in memory for 10 minutes (private server cache, allowed by Qloo's terms).
+
+## Sandbox
+
+`npm run sandbox` (16 checks): signature enforcement, location handoff in a real browser, one-time link, plan post, no raw chat echo, vote, leading marker, replan, vote reset, cross-channel isolation, named-place path, no-taste stop, and a canary check on the database. CI runs the offline checks on every push.

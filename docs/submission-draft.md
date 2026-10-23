@@ -16,7 +16,7 @@ Friday, 6:40 PM. Alex wants quiet jazz, Sam wants late-night food, Jo wants it t
 
 1. Someone runs `/encore ask:"what should we do tonight?"`. If the request names no place, Encore replies privately with a one-time "Use my location" button. The person approves browser location once; Encore never guesses from an IP address.
 2. With `use_recent_chat`, Encore reads the latest 25 messages once, keeps only the tastes and limits people stated, and discards the raw text.
-3. Qloo resolves each taste (Search, Tags) and returns nearby places (Insights). Code drops anything outside the radius or over budget.
+3. Qloo resolves each taste (Search, Tags) and returns nearby places (Insights). Code drops anything outside the radius or over budget, then ranks by how many members a place bridges. Each pick says who it fits and through which Qloo tag.
 4. The group votes or replans ("quieter, under $35"). The shortlist is posted in the channel.
 
 Worked example from production: Williamsburg, three stated tastes, three places inside 2 km returned in about 0.7 s. (Place names are omitted here because Qloo asks that its response data stay out of public repositories; the live demo shows them.)
@@ -40,7 +40,7 @@ No Qloo key or outage: explicit unavailable state. Nothing fits the limits: Enco
 
 ## Evaluation
 
-See `docs/evaluation.md`. Automated: 3 scenarios, all results in radius, shortlist differs from a popularity baseline. Not claimed: a quality lift, pending blind review. Published misses include a wedding venue ranking first for a jazz request.
+See `docs/evaluation.md`. Automated: 3 scenarios, all results in radius, shortlist differs from a popularity baseline, and in the 3-person scenario Qloo's places bridge one member on average against zero for the baseline. Two scenarios score zero for both. Not claimed: a quality lift, pending blind review. Published misses include a wedding venue ranking first for a jazz request.
 
 ## Challenges
 
@@ -48,6 +48,12 @@ See `docs/evaluation.md`. Automated: 3 scenarios, all results in radius, shortli
 - Fixture replans quietly fell back to production Qloo until fixtures were pinned to localhost.
 - The Qloo-unavailable message was written into a hidden panel.
 - A location link was burned when plan creation failed; the claim is now released.
+- A stated budget emptied every list: Qloo gives no dollar price for most venues and the filter dropped unknown prices. The local Discord sandbox caught it; unknown price now passes and is labeled.
+- A rate-limited key: Qloo 429s now retry with backoff and identical lookups are cached privately for 10 minutes.
+
+## Testing
+
+Offline unit tests, a real-browser web test, CI on every push, and `npm run sandbox`, a local mock Discord that drives the real Worker through the full flow with live Qloo (16 checks).
 
 ## Honest limits
 

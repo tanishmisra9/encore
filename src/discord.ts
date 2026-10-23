@@ -1,7 +1,10 @@
 import { resolveLocation, sanitizeSession, signalsFor, vote, winner, type Member, type Session } from './core';
 import { recommend, type EnvKeys } from './providers';
 
-type DiscordEnv = EnvKeys & { DISCORD_PUBLIC_KEY?: string; DISCORD_BOT_TOKEN?: string; DISCORD_APPLICATION_ID?: string };
+type DiscordEnv = EnvKeys & { DISCORD_PUBLIC_KEY?: string; DISCORD_BOT_TOKEN?: string; DISCORD_APPLICATION_ID?: string; DISCORD_API_BASE?: string };
+// DISCORD_API_BASE points the Worker at the local mock in test/sandbox.mjs; production uses Discord itself.
+let apiBase = 'https://discord.com/api/v10';
+const useApiBase = (env: DiscordEnv) => { apiBase = env.DISCORD_API_BASE || 'https://discord.com/api/v10'; };
 export type LocationHandoff = { id: string; channelId: string; request: string; userId: string; useRecentChat: boolean; expiresAt: number };
 type Store = { read(id: string): Promise<Session | null>; insert(plan: Session): Promise<void>; update(old: Session, next: Session): Promise<boolean>; createHandoff(handoff: LocationHandoff): Promise<void> };
 type Interaction = { type: number; id: string; token: string; application_id: string; channel_id?: string; member?: { user: DiscordUser }; user?: DiscordUser; message?: { id: string }; data?: { name?: string; custom_id?: string; options?: Array<{ name: string; value: string | boolean }>; components?: Array<{ components?: Array<{ custom_id: string; value: string }> }> } };
@@ -18,12 +21,12 @@ async function verified(request: Request, key: string): Promise<string | null> {
   return await crypto.subtle.verify('Ed25519', publicKey, bytes(signature), new TextEncoder().encode(timestamp + body)) ? body : null;
 }
 async function discordApi(path: string, token: string, method = 'GET', body?: object): Promise<unknown> {
-  const response = await fetch(`https://discord.com/api/v10${path}`, { method, headers: { Authorization: `Bot ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  const response = await fetch(`${apiBase}${path}`, { method, headers: { Authorization: `Bot ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
   if (!response.ok) throw new Error(`Discord API ${method} ${path} failed (${response.status})`);
   return response.status === 204 ? null : response.json();
 }
 async function editOriginal(interaction: Interaction, content: object): Promise<void> {
-  const response = await fetch(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(content) });
+  const response = await fetch(`${apiBase}/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(content) });
   if (!response.ok) throw new Error(`Discord followup failed (${response.status})`);
 }
 function display(plan: Session): object {
@@ -74,6 +77,7 @@ async function processCommand(interaction: Interaction, env: DiscordEnv, store: 
   await store.insert(plan); await editOriginal(interaction, display(plan));
 }
 export async function completeLocation(handoff: LocationHandoff, location: { lat: number; lon: number }, env: DiscordEnv, store: Store): Promise<void> {
+  useApiBase(env);
   if (!env.DISCORD_BOT_TOKEN) throw new Error('Discord bot is not configured');
   const context = await contextMembers(handoff.channelId, env.DISCORD_BOT_TOKEN, handoff.useRecentChat);
   if (!context.members.length) throw new Error('Encore needs one stated group taste. Run the command with use_recent_chat enabled after the group shares what it wants.');
@@ -99,6 +103,7 @@ async function processChange(interaction: Interaction, env: DiscordEnv, store: S
   if (!await store.update(old, next)) throw new Error('Plan changed. Please try again.'); await updateMessage(interaction, env, messageId, next);
 }
 export async function handleDiscord(request: Request, env: DiscordEnv, ctx: ExecutionContext, store: Store): Promise<Response> {
+  useApiBase(env);
   if (!env.DISCORD_PUBLIC_KEY) return new Response('Discord is not configured', { status: 503 });
   const raw = await verified(request, env.DISCORD_PUBLIC_KEY); if (raw === null) return new Response('Invalid signature', { status: 401 });
   const interaction = JSON.parse(raw) as Interaction; if (interaction.type === 1) return reply(1);
