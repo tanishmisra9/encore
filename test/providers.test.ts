@@ -60,7 +60,7 @@ test('members are bridged only by places carrying their resolved tag, and those 
     const result = await recommend({ ...plan, budget: 35 }, { QLOO_API_KEY: 'test-bridge' });
     assert.deepEqual(result.options.map(option => option.name), ['Both', 'Plain']);
     assert.deepEqual(result.options[0].appealsTo, ['Alex', 'Sam']);
-    assert.match(result.options[0].reason, /Bridges Alex and Sam/);
+    assert.match(result.options[0].reason, /Fits Alex \(.+\) and Sam \(.+\) through Qloo tags/);
     assert.equal(result.options[1].price, undefined);
     assert.deepEqual(result.options[1].appealsTo, []);
   } finally { globalThis.fetch = original; }

@@ -92,7 +92,7 @@ async function qlooRank(session: Session, key: string): Promise<Option[]> {
     .sort((a, b) => new Set(b.hits.map(hit => hit.name)).size - new Set(a.hits.map(hit => hit.name)).size || (raw.get(a.place.id)?.rank ?? 99) - (raw.get(b.place.id)?.rank ?? 99))
     .slice(0, 3).map(({ place, hits }, index) => {
       const names = [...new Set(hits.map(hit => hit.name))];
-      return { ...place, score: 3 - index, appealsTo: names, reason: names.length ? `Bridges ${names.join(' and ')}: ${hits.map(hit => `${hit.name} (${hit.tag})`).join(', ')}.` : 'Qloo ranked this near the group’s combined tastes; no single stated taste matched its tags exactly.' };
+      return { ...place, score: 3 - index, appealsTo: names, reason: names.length ? `Fits ${hits.map(hit => `${hit.name} (${hit.tag})`).join(' and ')} through Qloo tags.` : 'Qloo ranked this near the group’s combined tastes; no single stated taste matched its tags exactly.' };
     });
 }
 
