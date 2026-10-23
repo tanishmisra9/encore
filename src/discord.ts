@@ -34,7 +34,7 @@ function display(plan: Session): object {
   const source = plan.source === 'qloo' ? 'Qloo taste graph' : 'Local fixture';
   const intro = `**Encore · ${plan.location.label}**\n${plan.request}\nSource: ${source} · Read ${plan.discord?.contextRead || 0} recent messages on request; retained ${plan.discord?.statements || 0} explicit signals. Raw chat was discarded.\nGroup: ${plan.members.length} people · radius ${plan.radiusKm} km${plan.budget ? ` · budget $${plan.budget}` : ''}`;
   const buttons = [...plan.options.map((option, index) => ({ type: 2, style: 1, label: `Vote ${index + 1}`, custom_id: `vote:${plan.id}:${option.id}` })), { type: 2, style: 2, label: 'Add my taste', custom_id: `taste:${plan.id}` }, { type: 2, style: 2, label: 'Replan', custom_id: `replan:${plan.id}` }];
-  return { content: `${intro}\n\n${options || 'Encore needs one or more explicit group tastes before it can recommend a place.'}\n\nHours and availability must be confirmed before going.`, allowed_mentions: { parse: [] }, components: [{ type: 1, components: buttons.slice(0, 5) }] };
+  return { content: `${intro}\n\n${options || `Qloo found no places within ${plan.radiusKm} km that fit these tastes and limits. Widen the radius, relax the budget, or add another taste with Replan.`}\n\nHours and availability must be confirmed before going.`, allowed_mentions: { parse: [] }, components: [{ type: 1, components: buttons.slice(0, 5) }] };
 }
 function modal(kind: 'taste' | 'replan', id: string, messageId: string): object {
   const input = (field: string, label: string, placeholder: string, required: boolean) => ({ type: 1, components: [{ type: 4, custom_id: field, label, style: 1, min_length: 1, max_length: 200, required, placeholder }] });

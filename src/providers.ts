@@ -21,16 +21,20 @@ function tags(data: unknown): QlooTag[] {
 }
 function coordinates(entity: QlooEntity): { lat: number; lon: number } | null {
   const properties = entity.properties || {};
-  const location = (properties.location || properties.geocode || entity.location || {}) as Record<string, unknown>;
-  const lat = Number(location.latitude ?? location.lat);
-  const lon = Number(location.longitude ?? location.lng ?? location.lon);
-  return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? { lat, lon } : null;
+  for (const candidate of [entity.location, properties.geocode, properties.location]) {
+    const location = (candidate || {}) as Record<string, unknown>;
+    const lat = Number(location.latitude ?? location.lat), lon = Number(location.longitude ?? location.lng ?? location.lon);
+    if (Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) return { lat, lon };
+  }
+  return null;
 }
 
 async function qlooRank(session: Session, key: string): Promise<Option[]> {
   const terms = [...new Set(session.signals.filter(signal => signal.kind === 'taste').map(signal => signal.value.trim()).filter(Boolean))].slice(0, 6);
   if (!terms.length) throw new Error('Encore needs one stated taste before it can ask Qloo.');
-  const lookups = await Promise.all(terms.map(async term => ({ term, search: await qlooGet('/search', new URLSearchParams({ query: term, take: '3' }), key), tag: await qlooGet('/v2/tags', new URLSearchParams({ query: term, take: '3' }), key) })));
+  const settle = (call: Promise<unknown>) => call.catch(() => null);
+  const lookups = await Promise.all(terms.map(async term => ({ term, search: await settle(qlooGet('/search', new URLSearchParams({ query: term, take: '3' }), key)), tag: await settle(qlooGet('/v2/tags', new URLSearchParams({ 'filter.query': term, take: '3' }), key)) })));
+  if (lookups.every(({ search, tag }) => !search && !tag)) throw new Error('Qloo unavailable');
   const anchors = lookups.flatMap(({ search }) => entities(search).slice(0, 1)).filter((entity): entity is QlooEntity & { entity_id: string } => !!entity.entity_id);
   const tagIds = lookups.flatMap(({ tag }) => tags(tag).slice(0, 1).map(item => item.id || item.tag_id).filter((id): id is string => !!id));
   if (!anchors.length && !tagIds.length) throw new Error('Encore could not resolve the group’s cultural signals. Ask with a few specific tastes.');
@@ -47,7 +51,7 @@ async function qlooRank(session: Session, key: string): Promise<Option[]> {
   const places: Place[] = entities(result).flatMap(entity => {
     const point = coordinates(entity);
     if (!point || !entity.entity_id || !entity.name) return [];
-    return [{ id: `qloo-${entity.entity_id}`, name: entity.name, ...point, category: entity.subtype || 'place', tags: (entity.tags || []).map(tag => tag.name).filter((tag): tag is string => !!tag) }];
+    return [{ id: `qloo-${entity.entity_id}`, name: entity.name, ...point, category: entity.tags?.[0]?.name || 'place', tags: (entity.tags || []).map(tag => tag.name).filter((tag): tag is string => !!tag) }];
   });
   const appealsTo = [...new Set(session.signals.filter(signal => signal.kind === 'taste').map(signal => signal.name))];
   return filterPlaces(session, places).sort((a, b) => (byId.get(b.id)?.query?.affinity_rank ?? byId.get(b.id)?.query?.affinity ?? 0) - (byId.get(a.id)?.query?.affinity_rank ?? byId.get(a.id)?.query?.affinity ?? 0))

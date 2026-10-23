@@ -13,7 +13,7 @@ test('Qloo path resolves group signals, uses tags, and enforces distance locally
     if (url.includes('/search?')) return Response.json({ results: { entities: [{ entity_id: 'taste-anchor', name: 'Jazz', subtype: 'urn:entity:artist' }] } });
     if (url.includes('/v2/tags?')) return Response.json({ results: { tags: [{ id: 'taste-tag', name: 'Jazz' }] } });
     if (url.includes('/v2/insights?')) return Response.json({ results: { entities: [
-      { entity_id: 'near', name: 'Near', properties: { location: { latitude: 40.718, longitude: -73.963 } }, query: { affinity_rank: 0.8 } },
+      { entity_id: 'near', name: 'Near', location: { lat: 40.718, lon: -73.963 }, properties: { geocode: { city: 'NYC' } }, query: { affinity_rank: 0.8 } },
       { entity_id: 'far', name: 'Far', properties: { location: { latitude: 40.9, longitude: -73.963 } }, query: { affinity_rank: 0.9 } },
     ] } });
     throw new Error(`Unexpected URL ${url}`);
