@@ -6,6 +6,7 @@ type QlooTag = { id?: string; tag_id?: string; name?: string };
 
 async function qlooGet(path: string, params: URLSearchParams, key: string): Promise<unknown> {
   const response = await fetch(`https://hackathon.api.qloo.com${path}?${params}`, { headers: { 'X-Api-Key': key } });
+  if (response.status === 429) throw new Error('Qloo unavailable (429): the hackathon key is rate-limited. Try again in a minute.');
   if (!response.ok) throw new Error(`Qloo unavailable (${response.status})`);
   return response.json();
 }

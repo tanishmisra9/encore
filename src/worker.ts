@@ -7,6 +7,7 @@ const json = (value: unknown, status = 200) => Response.json(value, status === 2
 const bad = (message: string, status = 400) => json({ error: message }, status);
 const clean = (value: unknown, max = 300) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 const number = (value: unknown, min: number, max: number) => { const n = Number(value); return Number.isFinite(n) && n >= min && n <= max ? n : undefined; };
+let demoCache: { rec: Awaited<ReturnType<typeof recommend>>; expires: number } | null = null;
 const handoffId = (value: string) => /^[a-f0-9-]{36}$/i.test(value);
 
 async function readPlan(db: D1Database, id: string): Promise<Session | null> {
@@ -59,7 +60,10 @@ async function handleApi(request: Request, env: Env): Promise<Response> {
   if (url.pathname === '/api/demo' && request.method === 'POST') {
     const plan = demoSession();
     const fixture = url.searchParams.get('fixture') === '1' && ['localhost', '127.0.0.1'].includes(url.hostname);
-    const rec = await recommend(plan, env, fixture ? 'fixture' : 'production');
+    // The seeded scenario is identical for every visitor, so reuse a recent Qloo result (private server cache) to stay under Qloo rate limits.
+    const cached = !fixture && demoCache && demoCache.expires > Date.now() ? demoCache.rec : null;
+    const rec = cached || await recommend(plan, env, fixture ? 'fixture' : 'production');
+    if (!fixture && !cached) demoCache = { rec, expires: Date.now() + 10 * 60_000 };
     Object.assign(plan, rec);
     await insertPlan(env.DB, plan);
     return json(plan, 201);

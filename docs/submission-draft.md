@@ -4,25 +4,66 @@
 
 **A Discord planner that finds the cultural overlap in a group chat.**
 
-## The problem
+## Thesis
 
-Group chats contain plenty of ideas. The hard part is reconciling them. One person wants quiet conversation, another wants food, another wants the night to feel special. The result is usually a thread of links and no decision.
+Group chats do not lack ideas. They lack a way to reconcile them. Encore uses Qloo to find nearby places that bridge several people's tastes, and plain code to enforce distance, budget and votes. The model never decides what is allowed.
 
-## What Encore does
+## Opening scene
 
-Encore turns a natural Discord request into a local social plan. A group can authorize a one-time scan of its latest 25 messages. Encore keeps explicit tastes and practical limits, discards raw messages, finds a Qloo-grounded shortlist, and lets the group vote or replan.
+Friday, 6:40 PM. Alex wants quiet jazz, Sam wants late-night food, Jo wants it to feel like a night out. Forty messages later there are three links and no plan.
 
-## Why Qloo is essential
+## What it does
 
-A generic model can suggest nearby places. Encore needs Qloo to connect cultural references across people and identify nearby places that bridge them. Qloo Search resolves entities, Tags resolves usable taste signals, and Insights supplies local candidates. If Qloo is unavailable, production Encore asks for clarification or reports unavailable.
+1. Someone runs `/encore ask:"what should we do tonight?"`. If the request names no place, Encore replies privately with a one-time "Use my location" button. The person approves browser location once; Encore never guesses from an IP address.
+2. With `use_recent_chat`, Encore reads the latest 25 messages once, keeps only the tastes and limits people stated, and discards the raw text.
+3. Qloo resolves each taste (Search, Tags) and returns nearby places (Insights). Code drops anything outside the radius or over budget.
+4. The group votes or replans ("quieter, under $35"). The shortlist is posted in the channel.
 
-## How we built it
+Worked example from production: Williamsburg, three stated tastes, three places inside 2 km returned in about 0.7 s. (Place names are omitted here because Qloo asks that its response data stay out of public repositories; the live demo shows them.)
 
-- Signed Discord interactions and immediate deferred responses.
-- Cloudflare Worker and D1 state with seven-day expiry.
-- A strict separation between model extraction, Qloo cultural grounding, deterministic constraints, and human approval.
-- A public silent replay, focused logged-out demo route, and Discord demo flow.
+## LLM vs code
+
+| Decision | Owner |
+| --- | --- |
+| Which cultural places fit these tastes | Qloo |
+| Radius, budget, one vote per member, replan limits | Deterministic code |
+| Which tastes people stated | Explicit statements only; raw chat is not stored |
+| Whether to go | The group |
+
+## What breaks without Qloo
+
+Production returns "unavailable" instead of a generic list. In the evaluation, removing the taste signals changed the shortlist in 3 of 3 scenarios, so Qloo is what ties the result to the group.
+
+## Uncertainty and refusal
+
+No Qloo key or outage: explicit unavailable state. Nothing fits the limits: Encore says so and offers to widen the radius. Hours and prices are shown as unconfirmed unless data exists.
+
+## Evaluation
+
+See `docs/evaluation.md`. Automated: 3 scenarios, all results in radius, shortlist differs from a popularity baseline. Not claimed: a quality lift, pending blind review. Published misses include a wedding venue ranking first for a jazz request.
+
+## Challenges
+
+- Mocked tests passed while the real Tags endpoint rejected our parameter.
+- Fixture replans quietly fell back to production Qloo until fixtures were pinned to localhost.
+- The Qloo-unavailable message was written into a hidden panel.
+- A location link was burned when plan creation failed; the claim is now released.
 
 ## Honest limits
 
-Encore never claims booking, hours, availability, or price without data. It does not claim a measured Qloo lift until the documented blind comparison is complete.
+No booking, hours or availability claims. Location is a shared point with no reverse-geocoded name. Ranking quality is not yet proven against human judgment.
+
+## Hackathon requirements and criteria (rules read 2026-10-22; deadline Oct 30, 2026, 11:45 pm ET)
+
+| Requirement or criterion | Where Encore stands |
+| --- | --- |
+| Working app that integrates Qloo and is an agentic tool | Discord `/encore` agent plus hosted demo; Search, Tags and Insights all used |
+| Functional demo link | https://encore.encore-tanishmisra9.workers.dev (no login) |
+| Public repo with a visible open-source license | MIT license present. The repo is still private and must be made public before submitting |
+| Text description | This document |
+| Technological Implementation | Three Qloo endpoints, location-bounded Insights, local constraint enforcement, tested failure handling |
+| Design | Silent replay, focused demo, one-tap location handoff |
+| Potential Impact | Groups that cannot reconcile tastes into one local plan |
+| Quality of the Idea | Qloo bridges several people's tastes at once instead of ranking for one person |
+| Significant update in the period | Built entirely inside the submission period (first commit this month) |
+| Free access through judging (Nov 2 to 5) | Keep the Worker deployed; Qloo keys stay active through judging but the key is rate-limited |
