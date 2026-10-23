@@ -44,7 +44,11 @@ async function handleLocationHandoff(request: Request, env: Env, id: string): Pr
   if (lat === undefined || lon === undefined) return bad('Location coordinates are invalid.');
   const handoff = await takeHandoff(env.DB, id);
   if (!handoff) return bad('This location link is invalid, expired, or already used.', 404);
-  await completeLocation(handoff, { lat, lon }, env, store(env.DB));
+  try { await completeLocation(handoff, { lat, lon }, env, store(env.DB)); }
+  catch (error) {
+    await env.DB.prepare('UPDATE pending_locations SET used_at = NULL WHERE id = ?').bind(id).run();
+    return bad(error instanceof Error ? error.message : 'Encore could not finish the plan. Try again.', 503);
+  }
   return json({ posted: true });
 }
 
