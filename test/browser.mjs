@@ -22,5 +22,10 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('.demo-option').length <= 3);
   assert.equal(await page.locator('#demo-error').textContent(), '');
   await page.screenshot({ path: '/tmp/encore-demo.png', fullPage: true });
+
+  await page.goto(baseUrl + '/demo.html');
+  await page.getByRole('button', { name: 'Start the Friday-night plan' }).click();
+  await page.locator('#start-error').filter({ hasText: 'Qloo is not configured yet.' }).waitFor();
+  assert.equal(await page.locator('#demo-start').evaluate(element => !element.hidden), true);
   console.log('Browser flow passed');
 } finally { await browser.close(); }
