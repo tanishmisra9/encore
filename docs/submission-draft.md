@@ -1,75 +1,57 @@
-# Encore submission draft
+# Memory Lane submission
 
 ## Tagline
 
-**A Discord planner that finds the cultural overlap in a group chat.**
-
-## Thesis
-
-Group chats do not lack ideas. They lack a way to reconcile them. Encore uses Qloo to find nearby places that bridge several people's tastes, and plain code to enforce distance, budget and votes. The model never decides what is allowed.
+**The right song isn't the popular one. It's the one from when they were 19.**
 
 ## Opening scene
 
-Friday, 6:40 PM. Alex wants quiet jazz, Sam wants late-night food, Jo wants it to feel like a night out. Forty messages later there are three links and no plan.
+Sunday afternoon at the care home. A daughter pulls up "oldies" for her father and gets songs he never heard. He looks out the window. Later someone plays a song he danced to at 19, and he starts tapping the table.
+
+For many people with dementia, music from their teens and twenties is among the last things that stays familiar. That window, roughly ages 10 to 30, is known as the reminiscence bump, and it is well documented in healthy adults; evidence in dementia is smaller but points the same way ([Kaiser and Berntsen, 2022](https://pure.au.dk/ws/files/338096928/WIRES_Cognitive_Science_-_2022_-_Kaiser.pdf)). More than 55 million people live with dementia worldwide ([WHO](https://www.who.int/news-room/fact-sheets/detail/dementia)), and almost all of their caregivers are families with no way to find the right songs.
+
+## Why the obvious approach fails
+
+A search for "oldies" returns what was popular for everyone, in one country. A language model invents plausible titles. Neither knows this person's culture, decade, or taste. Measured on Qloo's data, a generic popular list fits a person's youth 17% of the time and puts an upsetting lyrical theme in 83% of its top six.
+
+**Thesis: Qloo finds what someone's tastes are close to, plain code decides what is safe and from their years, and every reaction reshapes the next session.**
 
 ## What it does
 
-1. Someone runs `/encore ask:"what should we do tonight?"`. If the request names no place, Encore replies privately with a one-time "Use my location" button. The person approves browser location once; Encore never guesses from an IP address.
-2. With `use_recent_chat`, Encore reads the latest 25 messages once, keeps only the tastes and limits people stated, and discards the raw text.
-3. Qloo resolves each taste (Search, Tags) and returns nearby places (Insights). Code drops anything outside the radius or over budget, then ranks by how many members a place bridges. Each pick says who it fits and through which Qloo tag.
-4. The group votes or replans ("quieter, under $35"). The shortlist is posted in the channel.
+1. A caregiver enters a birth year and one to three artists the person loved (autocomplete from Qloo, or a starter shelf for 12 countries).
+2. An agent asks Qloo for artists near them, keeps only those active during ages 10 to 30 that are familiar and have gentle lyrical themes, re-anchors on what it found, and repeats until it has enough. Named artists are dated through iTunes, so their songs show an exact year and age.
+3. The page shows six songs with 30-second previews, two films or shows from the same years, and three conversation prompts built from the real titles.
+4. The caregiver taps Smiled, Okay or Upset on each item. Upset bans the artist and replaces the song; Smiled warms that genre. The session prints as a "what works" page for family or care staff, and can be deleted.
 
-Worked example from production: Williamsburg, three stated tastes, three places inside 2 km returned in about 0.7 s. (Place names are omitted here because Qloo asks that its response data stay out of public repositories; the live demo shows them.)
+## How Qloo is used, and what breaks without it
 
-## LLM vs code
+Search resolves the artists the caregiver names. Insights returns artists, films and shows near them, across a culture Memory Lane has no list for (the Greek, Mexican, Indian, Brazilian and Jamaican examples need no hand-built data). Without Qloo there is no way to go from "Nana Mouskouri" to Manos Hadjidakis and George Dalaras; the app shows Qloo's failure instead of a generic list.
 
-| Decision | Owner |
-| --- | --- |
-| Which cultural places fit these tastes | Qloo |
-| Radius, budget, one vote per member, replan limits | Deterministic code |
-| Which tastes people stated | Explicit statements only; raw chat is not stored |
-| Whether to go | The group |
+## LLM versus code
 
-## What breaks without Qloo
-
-Production returns "unavailable" instead of a generic list. In the evaluation, removing the taste signals changed the shortlist in 3 of 3 scenarios, so Qloo is what ties the result to the group.
-
-## Uncertainty and refusal
-
-No Qloo key or outage: explicit unavailable state. Nothing fits the limits: Encore says so and offers to widen the radius. Hours and prices are shown as unconfirmed unless data exists.
+There is no language model. Qloo supplies candidates. Code decides era (born +10 to +30, unknown years excluded), familiarity, gentle themes, audio availability, de-duplication, and how reactions change the plan. Prompts are fixed templates filled with real titles. The caregiver decides everything else.
 
 ## Evaluation
 
-See `docs/evaluation.md`. Automated: 3 scenarios, all results in radius, shortlist differs from a popularity baseline, and in the 3-person scenario Qloo's places bridge one member on average against zero for the baseline. Two scenarios score zero for both. Not claimed: a quality lift, pending blind review. Published misses include a wedding venue ranking first for a jazz request.
+Eight personas, three arms (full table in `docs/evaluation.md`). A generic popular list fits the person's era 17% of the time, has upsetting themes in 83% of its top six, and is identical for every persona. Memory Lane's lists are era-fit and share nothing across personas. The agent loop finds about 22% more safe in-era artists than a single Qloo call (21.4 against 17.6 on average, 7 against 5 at the minimum). Audio previews exist for 96% of songs. Not shown: whether the songs are the right ones for a real person. That needs caregivers, and it is not claimed.
 
 ## Challenges
 
-- Mocked tests passed while the real Tags endpoint rejected our parameter.
-- Fixture replans quietly fell back to production Qloo until fixtures were pinned to localhost.
-- The Qloo-unavailable message was written into a hidden panel.
-- A location link was burned when plan creation failed; the claim is now released.
-- A stated budget emptied every list: Qloo gives no dollar price for most venues and the filter dropped unknown prices. The local Discord sandbox caught it; unknown price now passes and is labeled.
-- A rate-limited key: Qloo 429s now retry with backoff and identical lookups are cached privately for 10 minutes.
+- A `null` end year became 0, so every active artist looked retired. A unit test caught it.
+- Qloo's search results carry no era fields, so the first build dropped Frank Sinatra as "not active". Named artists are now dated through iTunes.
+- The agent's third round repeated its second query until it re-anchored on artists it had not used.
+- "Bob Marley" and "Bob Marley & The Wailers" both played "No Woman, No Cry" in one session.
+- The Discord version of this project (archived on `v1-discord`) needed a server, a bot invite and a location handoff. Judges could not try it, so we rebuilt it as a page.
 
-## Testing
+## Qloo criteria
 
-Offline unit tests, a real-browser web test, CI on every push, and `npm run sandbox`, a local mock Discord that drives the real Worker through the full flow with live Qloo (16 checks).
+| Criterion | How Memory Lane answers it |
+| --- | --- |
+| Technological implementation | Qloo Search, Insights across artists, movies and TV, release-year window, explainability for "found through", a re-anchoring agent loop, a deterministic safety engine, 19 tests, a real-browser test, a three-arm evaluation |
+| Design | A jukebox title-strip wall, one idea per screen, 44px targets, AA contrast, no pills, mobile first |
+| Potential impact | Family caregivers of the 55 million-plus people with dementia; free, no login, prints a summary for care staff |
+| Quality of the idea | Cultural intelligence where a generic model fails: era-anchored, culture-aware, safety-screened reminiscence |
 
 ## Honest limits
 
-No booking, hours or availability claims. Location is a shared point with no reverse-geocoded name. Ranking quality is not yet proven against human judgment.
-
-## Hackathon requirements and criteria (rules read 2026-10-22; deadline Oct 30, 2026, 11:45 pm ET)
-
-| Requirement or criterion | Where Encore stands |
-| --- | --- |
-| Working app that integrates Qloo and is an agentic tool | Discord `/encore` agent plus hosted demo; Search, Tags and Insights all used |
-| Functional demo link | https://encore.encore-tanishmisra9.workers.dev (no login) |
-| Public repo with a visible open-source license | MIT license present. The repo is still private and must be made public before submitting |
-| Text description | This document |
-| Technological Implementation | Three Qloo endpoints, location-bounded Insights, local constraint enforcement, tested failure handling |
-| Design | Silent replay, focused demo, one-tap location handoff |
-| Potential Impact | Groups that cannot reconcile tastes into one local plan |
-| Quality of the Idea | Qloo bridges several people's tastes at once instead of ranking for one person |
-| Significant update in the period | Built entirely inside the submission period (first commit this month) |
-| Free access through judging (Nov 2 to 5) | Keep the Worker deployed; Qloo keys stay active through judging but the key is rate-limited |
+Not therapy and makes no medical claim. No per-song year for found artists, so it shows ages. Films and shows are weaker matches. No human review of the songs yet. Qloo's hackathon key is rate-limited; repeated lookups are cached on the server.

@@ -93,3 +93,9 @@ test('a named artist with dated songs gets an exact year and age and a preview',
   const [item] = buildPlan({ artists: [named], media: [] }, profile);
   assert.deepEqual([item.title, item.year, item.age, item.ages, item.previewUrl, item.found], ['Dated', 1964, 18, [18, 18], 'p', false]);
 });
+
+test('one act under two names, and one song under two spellings, appear once', () => {
+  const a = artist('a', { name: 'Bob Marley', songs: ['No Woman, No Cry'] }), b = artist('b', { name: 'Bob Marley & The Wailers', songs: ['No Woman No Cry'] }), c = artist('c', { name: 'Peter Tosh', songs: ['No Woman, No Cry'] });
+  const plan = buildPlan({ artists: [a, b, c, artist('d')], media: [] }, profile);
+  assert.deepEqual(plan.map(i => i.by), ['Bob Marley', 'Artist d']);
+});

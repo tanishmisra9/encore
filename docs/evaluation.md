@@ -1,56 +1,48 @@
-# Evaluation protocol
+# Evaluation
 
-## Question
+Run it yourself: `npm run eval` (needs a Qloo key). Qloo's terms keep response data out of public repositories, so this file holds aggregates only.
 
-Does Qloo produce a more culturally coherent local compromise than the same planner with generic ranking?
+## Setup
 
-## Modes
+Eight frozen personas, each with a birth year and two artists they loved: US 1946, UK 1942, Mexico 1950, India 1948, Greece 1947, Brazil 1949, Jamaica 1952, Italy 1944. Three arms, scored on the first six artists each would play.
 
-| Mode | Candidate source | Label |
-| --- | --- | --- |
-| Qloo | `/search`, `/v2/tags`, and `/v2/insights` | `QLOO-POWERED` |
-| Baseline | Identical constraints with generic ranking | `BASELINE` |
+| Arm | What it is |
+| --- | --- |
+| **memory-lane** | The shipped agent loop and engine |
+| **anchors-only** | One Qloo Insights call from the named artists, same era and safety filters, no re-anchoring loop (an ablation of the agent) |
+| **popularity** | What a plain "popular music" request returns: Qloo's most popular artists, no personal signal, no filters |
 
-Production Encore does not use the baseline. It displays unavailable or clarification states when Qloo cannot produce candidates.
+## Results (2026-10-24, live Qloo)
 
-## Fixed scenarios
-
-| Request | Explicit signals | Revision |
-| --- | --- | --- |
-| What should we do in Williamsburg tonight? | quiet jazz, late-night food, a real night out | quieter, under $35 |
-| Where should our visiting friends go nearby? | thoughtful wine, conversation, local music | within 1 km |
-| What should the team do after work? | casual food, low noise, no expensive cocktails | under $30 |
-
-## Blind review
-
-For each completed scenario, show three blinded reviewers the request, explicit signals, constraints, and randomized Qloo and baseline shortlists. Each reviewer selects the list that best fits the group and records a sentence explaining why.
-
-Report reviewer count, scenario count, Qloo wins, baseline wins, ties, latency, unresolved requests, and every mismatch. Do not claim improvement until these results exist.
-
-## Deterministic checks
-
-`npm test` verifies context limits, raw-chat exclusion, location follow-up, Qloo tag and entity use, constraint filtering, vote validity, revision behavior, and failure without a production fallback.
-
-## Results: automated run (2026-10-22, `node --import tsx scripts/eval.mts`)
-
-Baseline = the same Qloo Insights call with the same location, radius and distance filter but no taste signals (popularity ranking). Qloo's terms ask that response data not be stored in a public repository, so this table keeps aggregates only. Rerun the script with your own key to see the shortlists.
-
-Metric: **members bridged per place**. Each stated taste is resolved to a Qloo tag; a place bridges a member when it carries that tag. The same function scores both lists, so the baseline is not handicapped by a different yardstick. The count is a floor, because a place can fit a taste without carrying the exact tag.
-
-| Scenario (group size) | Qloo bridged per place | Baseline bridged per place | In radius | Places shared | Latency |
+| Arm | Era fit | Upsetting themes | Safe in-era artists found (mean, min) | Overlap between personas | Latency |
 | --- | --- | --- | --- | --- | --- |
-| Williamsburg night out (3) | 1.00 | 0.00 | yes | 0 of 3 | 704 ms |
-| Visiting friends, wine and music (2) | 0.00 | 0.00 | yes | 1 of 3 | 1923 ms |
-| Team after work, casual (2) | 0.00 | 0.00 | yes | 0 of 3 | 366 ms |
+| memory-lane | 100% | 0% | 21.4, 7 | 0.00 | 6.0 s cold |
+| anchors-only | 100% | 0% | 17.6, 5 | 0.01 | 3.2 s cold |
+| popularity | 17% | 83% | 3.0, 3 | 1.00 | none |
 
-What this shows: in 1 of 3 scenarios Qloo's list bridges members and the popularity list bridges none; in all 3 the shortlist differs from the baseline and stays inside the radius. What it does not show: a general quality lift. Two of three scenarios score zero for both lists, so the metric cannot separate them there, and no place bridged two members at once. Known misses: "thoughtful wine" and "casual food" resolve to broad Qloo tags that few places carry verbatim, and a hotel can still appear in a night-out list. The blind review above is still required before claiming improvement.
+Audio previews: 46 of 48 planned songs (96%).
+
+## How to read this
+
+- **The big gap is personalization.** A generic popular list fits the person's youth 17% of the time, has an upsetting lyrical theme in 83% of its top six, and is identical for every persona (overlap 1.00). Memory Lane's lists share nothing across personas.
+- **Era fit and theme safety are 100% and 0% for the two filtered arms by construction**, because they use the same filter. They show the filters work, not that the loop is better.
+- **What the agent loop adds is depth.** It finds about 22% more safe in-era artists on average (21.4 against 17.6) and 7 against 5 in the worst persona. That matters for replacing upset songs without running out. It costs about 3 seconds on a cold start; repeat requests are cached and return in under a second.
+- **What this does not show.** There is no human judgment of whether the songs are the ones this person would love. The checks are era, familiarity, lyrical themes, and audio availability, all from Qloo and iTunes fields. A blind review by caregivers is the missing evidence and is not claimed.
+
+## Misses and caveats
+
+- Lyrical themes and obscurity come from Qloo and are missing for some artists. Those pass the filter and are labelled "themes unknown" in the plan notes.
+- Qloo's `notable_songs` sometimes names an album or a track iTunes lacks. The server tries the artist's other songs, then swaps the artist, which is why 4% of songs still have no preview.
+- Films and shows are chosen by popularity within the window and are weaker cultural matches than the music (a rock documentary appeared for a Jamaican persona).
+- Qloo's search results carry no era data, so named artists are dated through iTunes. An artist iTunes cannot date inside the window is left out, and the trace says so.
 
 ## Iteration log
 
-| Change | Effect |
+| Change | Why |
 | --- | --- |
-| Tag lookup used `query=`, which Qloo rejects | Every real request failed until `filter.query` |
-| Prefer place tags (cuisine, ambience, offerings) over music or occupation tags | Night-out list moved from a wedding venue and a pier to bars and a parkhouse |
-| Fall back from the full phrase to its last word when no tag matches | "thoughtful wine" resolves to "wine" |
-| Budget filter dropped places with unknown price | Every Qloo place has an unknown price, so a stated budget emptied the list; unknown price now passes and is labeled |
-| Rank by members bridged, then Qloo order | Each pick states who it fits and through which tag |
+| `null` end year read as 0 | Every active artist looked retired; caught by a unit test |
+| Re-anchor on artists not yet used | Hop 3 repeated hop 2's query and added nothing |
+| Named artists dated through iTunes | The first build dropped Frank Sinatra as "not active" because search results lack years |
+| Songs without audio are swapped | A strip nobody can play defeats the demo |
+| Same act under two names, same song under two spellings | "Bob Marley" and "Bob Marley & The Wailers" both played "No Woman, No Cry" |
+| Song years replaced by the ages the artist was active | Qloo has no per-song dates; a made-up year would be false |

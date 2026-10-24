@@ -9,6 +9,9 @@ export type Pool = { artists: Artist[]; media: Media[] };
 export const MIN_BORN = 1920, MAX_BORN = 1975, MAX_OBSCURITY = 3, MAX_COMPLEXITY = 6, SONGS = 6, MEDIA = 2;
 // Themes that can distress; matched as whole words in Qloo's lyrical_themes.
 const UPSETTING = /\b(death|dying|grief|loss|heartbreak|heartache|drinking|alcohol|violence|war|despair|suicide|sorrow|loneliness)\b/i;
+const key = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+// "Bob Marley" and "Bob Marley & The Wailers" are one act, and a re-spelled title is the same song.
+const sameAct = (a: string, b: string) => { const x = key(a), y = key(b); return x === y || x.startsWith(y + ' ') || y.startsWith(x + ' '); };
 const clamp = (value: number) => Math.min(2, Math.max(0.25, value));
 
 export const eraWindow = (born: number): [number, number] => [born + 10, born + 30];
@@ -52,9 +55,9 @@ export function eligible(pool: Pool, profile: Profile): Artist[] {
 
 function songItem(artist: Artist, profile: Profile, code: string, used: Set<string>): Item {
   // Artists the caregiver named come with songs dated by iTunes, so their year and age are exact.
-  const dated = artist.known?.find(song => !used.has(song.title.toLowerCase())) ?? artist.known?.[0];
+  const dated = artist.known?.find(song => !used.has(key(song.title))) ?? artist.known?.[0];
   if (dated) return { id: `${artist.id}:${dated.title}`, kind: 'song', code, title: dated.title, by: artist.name, artistId: artist.id, genres: artist.genres, year: dated.year, age: dated.year - profile.born, ages: [dated.year - profile.born, dated.year - profile.born], image: artist.image, previewUrl: dated.previewUrl, found: false, notes: [`released ${dated.year}`] };
-  const title = artist.songs.find(song => !used.has(song.toLowerCase())) ?? artist.songs[0];
+  const title = artist.songs.find(song => !used.has(key(song))) ?? artist.songs[0];
   // Qloo gives the artist's active years, not each song's release year, so show the ages they were active within the window.
   const from = Math.max(artist.start ?? 0, profile.born + 10), to = Math.min(artist.end ?? Infinity, profile.born + 30);
   return { id: `${artist.id}:${title}`, kind: 'song', code, title, by: artist.name, artistId: artist.id, genres: artist.genres, year: from, age: from - profile.born, ages: [from - profile.born, to - profile.born], image: artist.image, via: artist.via, found: !profile.anchors.some(a => a.id === artist.id),
@@ -70,10 +73,10 @@ export function buildPlan(pool: Pool, profile: Profile): Item[] {
   const seen = new Set<string>();
   for (const artist of eligible(pool, profile)) {
     if (items.length >= SONGS) break;
-    if (seen.has(artist.name.toLowerCase())) continue;
-    seen.add(artist.name.toLowerCase());
+    if ([...seen].some(name => sameAct(name, artist.name))) continue;
     const item = songItem(artist, profile, `A${items.length + 1}`, used);
-    used.add(item.title.toLowerCase()); items.push(item);
+    if (used.has(key(item.title))) continue;
+    seen.add(artist.name); used.add(key(item.title)); items.push(item);
   }
   const media = pool.media.filter(m => m.year >= profile.born + 10 && m.year <= profile.born + 30).slice(0, MEDIA);
   media.forEach((m, i) => items.push(mediaItem(m, profile, `B${i + 1}`)));
@@ -102,12 +105,12 @@ export function applyReaction(profile: Profile, item: Item, reaction: Reaction):
 // Replace upset or newly banned songs with the next eligible artist; reacted-and-kept items never move.
 export function refill(plan: Item[], pool: Pool, profile: Profile): Item[] {
   const keep = (item: Item) => item.kind !== 'song' || (item.reaction !== 'upset' && !(item.artistId && profile.banned.includes(item.artistId)));
-  const used = new Set(plan.map(i => i.title.toLowerCase())), names = new Set(plan.filter(keep).map(i => i.by?.toLowerCase()));
-  const spare = eligible(pool, profile).filter(a => !names.has(a.name.toLowerCase()) && !plan.some(i => i.artistId === a.id));
+  const used = new Set(plan.filter(keep).map(i => key(i.title))), names = plan.filter(keep).map(i => i.by).filter((n): n is string => !!n);
+  const spare = eligible(pool, profile).filter(a => !names.some(n => sameAct(n, a.name)) && !plan.some(i => i.artistId === a.id));
   return plan.map(item => {
     if (keep(item)) return item;
     const artist = spare.shift();
     if (!artist) return { ...item, reaction: 'upset' as const, title: 'No further song fits', by: undefined, artistId: undefined, previewUrl: null, image: undefined, genres: [], notes: ['no safe in-era artist left'] };
-    const next = songItem(artist, profile, item.code, used); used.add(next.title.toLowerCase()); return next;
+    const next = songItem(artist, profile, item.code, used); used.add(key(next.title)); names.push(artist.name); return next;
   });
 }
