@@ -69,8 +69,12 @@ export async function runAgent(input: { born: number; anchors: string[] }, key: 
 
   const names = new Map(anchors.map(a => [a.id, a.name])), pool = new Map<string, Artist>();
   // The artists the caregiver named go first: they are the surest songs, and they face the same safety screen as everyone else.
-  for (const { hit } of resolved) if (hit?.artist) pool.set(hit.id, hit.artist);
-  for (const { hit } of resolved) if (hit?.artist && !(inWindow(hit.artist, input.born) && safety(hit.artist).safe)) trace.push({ text: `Left out ${hit.name}: ${!inWindow(hit.artist, input.born) ? `not active ${from} to ${to}` : safety(hit.artist).notes[0]}.` });
+  for (const { hit } of resolved) {
+    if (!hit?.artist) continue;
+    const known = await datedSongs(hit.name, from, to, cache);
+    if (!known.length) { trace.push({ text: `Left out ${hit.name}: no songs on iTunes released ${from} to ${to}.` }); continue; }
+    pool.set(hit.id, { ...hit.artist, known, songs: known.map(k => k.title), start: known[0].year, end: undefined });
+  }
   let signals = anchors.map(a => a.id);
   const used = new Set(signals);
   for (let hop = 1; hop <= MAX_HOPS; hop++) {
@@ -104,6 +108,25 @@ export async function runAgent(input: { born: number; anchors: string[] }, key: 
   }
   trace.push({ text: `Picked films and shows released ${from} to ${to}.`, kept: media.length });
   return { anchors, unresolved, pool: { artists: [...pool.values()], media }, trace };
+}
+
+// Qloo's search results carry no era data, so for the artists a caregiver names, iTunes supplies dated songs inside the window.
+export async function datedSongs(artist: string, from: number, to: number, cache: Cache = memoryCache): Promise<{ title: string; year: number; previewUrl: string }[]> {
+  const id = `itunes-dated:${norm(artist)}:${from}:${to}`, hit = await cache.get(id);
+  if (hit) return hit as { title: string; year: number; previewUrl: string }[];
+  const response = await fetch(`https://itunes.apple.com/search?${new URLSearchParams({ term: artist, media: 'music', entity: 'song', attribute: 'artistTerm', limit: '50' })}`).catch(() => null);
+  if (!response?.ok) return [];
+  const data = await response.json() as { results?: Array<{ trackName?: string; artistName?: string; previewUrl?: string; releaseDate?: string }> };
+  const lead = norm(artist).split(' ')[0], seen = new Set<string>(), out: { title: string; year: number; previewUrl: string }[] = [];
+  for (const r of data.results ?? []) {
+    const year = Number((r.releaseDate || '').slice(0, 4)), title = r.trackName || '';
+    if (!r.previewUrl || !title || !norm(r.artistName || '').includes(lead) || year < from || year > to || seen.has(norm(title))) continue;
+    seen.add(norm(title)); out.push({ title, year, previewUrl: r.previewUrl });
+  }
+  out.sort((a, b) => a.year - b.year);
+  const result = out.slice(0, 3);
+  if (result.length) await cache.set(id, result, 7 * 24 * 3600_000);
+  return result;
 }
 
 // iTunes returns a 30-second preview; the artist name must match so a cover or namesake is never played.

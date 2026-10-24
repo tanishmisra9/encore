@@ -31,15 +31,27 @@ async function withPreviews(plan: Item[], pool: Pool, cache: Cache): Promise<Ite
   }));
 }
 
+// A song nobody can press play on defeats the point, so an artist with no audio is swapped for the next eligible one (up to three rounds).
+async function playable(plan: Item[], pool: Pool, profile: Profile, cache: Cache): Promise<{ plan: Item[]; profile: Profile }> {
+  let current = await withPreviews(plan, pool, cache);
+  for (let round = 0; round < 3; round++) {
+    const dead = current.filter(i => i.kind === 'song' && i.previewUrl === null && i.artistId);
+    if (!dead.length) break;
+    profile = { ...profile, banned: [...profile.banned, ...dead.map(i => i.artistId!)] };
+    current = await withPreviews(refill(current.map(i => dead.includes(i) ? { ...i, reaction: 'upset' as const } : i), pool, profile), pool, cache);
+  }
+  return { plan: current, profile };
+}
+
 async function create(request: Request, env: Env): Promise<Response> {
   if (!env.QLOO_API_KEY) return bad('Qloo is not configured.', 503);
   let input; try { input = validate(await request.json()); } catch (error) { return bad(error instanceof Error ? error.message : 'Invalid request.'); }
   const cache = dbCache(env.DB);
   let result; try { result = await runAgent(input, env.QLOO_API_KEY, cache); } catch (error) { return bad(error instanceof Error ? error.message : 'Qloo failed.', 502); }
   const profile: Profile = { born: input.born, name: input.name, anchors: result.anchors, weights: {}, banned: [] };
-  const plan = await withPreviews(buildPlan(result.pool, profile), result.pool, cache);
+  const { plan, profile: finalProfile } = await playable(buildPlan(result.pool, profile), result.pool, profile, cache);
   if (!plan.some(item => item.kind === 'song')) return bad('Qloo found no gentle, familiar songs from those years. Try different artists.', 422);
-  const session: Session = { id: crypto.randomUUID(), version: 0, profile, pool: result.pool, plan, trace: result.trace, unresolved: result.unresolved, createdAt: Date.now() };
+  const session: Session = { id: crypto.randomUUID(), version: 0, profile: finalProfile, pool: result.pool, plan, trace: result.trace, unresolved: result.unresolved, createdAt: Date.now() };
   await env.DB.prepare('INSERT INTO sessions (id, version, body, expires_at) VALUES (?,?,?,?)').bind(session.id, 0, JSON.stringify(session), Date.now() + KEEP).run();
   return json(view(session), 201);
 }
@@ -52,8 +64,8 @@ async function react(request: Request, env: Env, id: string): Promise<Response> 
   const reaction = body.reaction as Reaction, cache = dbCache(env.DB);
   const profile = applyReaction(session.profile, item, reaction);
   const marked = session.plan.map(i => i.id === item.id ? { ...i, reaction } : i);
-  const plan = await withPreviews(refill(marked, session.pool, profile), session.pool, cache);
-  const next: Session = { ...session, profile, plan, version: session.version + 1 };
+  const { plan, profile: nextProfile } = await playable(refill(marked, session.pool, profile), session.pool, profile, cache);
+  const next: Session = { ...session, profile: nextProfile, plan, version: session.version + 1 };
   const saved = await env.DB.prepare('UPDATE sessions SET version = ?, body = ? WHERE id = ? AND version = ?').bind(next.version, JSON.stringify(next), id, session.version).run();
   return saved.meta.changes === 1 ? json(view(next)) : bad('The session changed. Try again.', 409);
 }

@@ -1,5 +1,5 @@
 // Deterministic core: nothing here calls a model or a network. Qloo finds candidates; these rules decide what is safe to play.
-export type Artist = { id: string; name: string; start?: number; end?: number; obscurity?: number; complexity?: number; themes: string[]; songs: string[]; genres: string[]; image?: string; via?: string };
+export type Artist = { id: string; name: string; start?: number; end?: number; obscurity?: number; complexity?: number; themes: string[]; songs: string[]; genres: string[]; image?: string; via?: string; known?: { title: string; year: number; previewUrl: string }[] };
 export type Media = { id: string; title: string; year: number; kind: 'film' | 'show'; image?: string; popularity?: number };
 export type Reaction = 'smiled' | 'neutral' | 'upset';
 export type Item = { id: string; kind: 'song' | 'film' | 'show'; code: string; title: string; by?: string; artistId?: string; genres: string[]; year: number; age: number; ages?: [number, number]; image?: string; previewUrl?: string | null; via?: string; found: boolean; notes: string[]; reaction?: Reaction };
@@ -51,6 +51,9 @@ export function eligible(pool: Pool, profile: Profile): Artist[] {
 }
 
 function songItem(artist: Artist, profile: Profile, code: string, used: Set<string>): Item {
+  // Artists the caregiver named come with songs dated by iTunes, so their year and age are exact.
+  const dated = artist.known?.find(song => !used.has(song.title.toLowerCase())) ?? artist.known?.[0];
+  if (dated) return { id: `${artist.id}:${dated.title}`, kind: 'song', code, title: dated.title, by: artist.name, artistId: artist.id, genres: artist.genres, year: dated.year, age: dated.year - profile.born, ages: [dated.year - profile.born, dated.year - profile.born], image: artist.image, previewUrl: dated.previewUrl, found: false, notes: [`released ${dated.year}`] };
   const title = artist.songs.find(song => !used.has(song.toLowerCase())) ?? artist.songs[0];
   // Qloo gives the artist's active years, not each song's release year, so show the ages they were active within the window.
   const from = Math.max(artist.start ?? 0, profile.born + 10), to = Math.min(artist.end ?? Infinity, profile.born + 30);

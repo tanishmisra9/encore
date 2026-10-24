@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory Lane</title>
+<meta name="description" content="Music, films and shows from the years someone with dementia was young, found with Qloo, for a caregiver to play together.">
+<meta name="theme-color" content="#17120f">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<!--
+THESIS: A jukebox title-strip wall for reminiscence music: the page refuses the dark-grid music app and the soft-focus caregiving app.
+OWN-WORLD: Warm black cabinet, off-white title cards, stock-color code blocks (red, mustard, green, cobalt), condensed caps, square corners, no pills.
+STORY: A caregiver sees songs from the person's own youth, presses a strip, hears it, and records how it landed.
+FIRST VIEWPORT: Thesis headline over a wall of printed strips for a preset person; one action, "Make one for someone you love".
+FORM: Rockola jukebox wall, assigned direction (seed 0a8e281e).
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<a class="skip" href="#maker">Skip to the form</a>
+<header><a href="/">Memory Lane</a></header>
+<main>
+  <div class="hero">
+    <section class="intro" aria-labelledby="thesis">
+      <h1 id="thesis">The right song isn't the popular one. <em>It's the one from when they were 19.</em></h1>
+      <p class="lede">Name an artist they loved. Memory Lane finds the music, films and shows from their youth. Press a strip to hear it.</p>
+      <a class="button" href="#maker">Make one for someone you love</a>
+    </section>
+    <section aria-live="polite" aria-busy="false" id="session">
+      <div class="presets" role="group" aria-label="Try an example">
+        <span class="label">Or try</span>
+        <button class="preset" data-preset="us" aria-pressed="false">United States 1946</button>
+        <button class="preset" data-preset="mexico" aria-pressed="false">Mexico 1950</button>
+        <button class="preset" data-preset="greece" aria-pressed="false">Greece 1947</button>
+        <button class="preset" data-preset="india" aria-pressed="false">India 1948</button>
+      </div>
+      <div class="wall-head"><div><h2 id="wall-title">Example</h2><p id="wall-sub"></p></div></div>
+      <div class="wall" id="wall"></div>
+      <div class="after" id="after" hidden>
+        <div><span class="label">Conversation starters</span><ol class="prompts" id="prompts"></ol></div>
+        <details><summary>How it chose</summary><ol id="trace"></ol></details>
+        <div class="actions noprint"><a class="button" id="summary-link" href="#">Print the summary</a><button class="link" id="delete">Delete this session</button></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="maker" id="maker" aria-labelledby="maker-title">
+    <h2 id="maker-title">Make one</h2>
+    <p class="note">Birth year and one to three artists they loved. Nothing else is needed, and nothing about their health is asked or stored.</p>
+    <form id="form" novalidate>
+      <div class="row">
+        <div class="field"><label for="name">First name <small>(optional)</small></label><input id="name" name="name" maxlength="40" autocomplete="off"></div>
+        <div class="field"><label for="born">Year they were born</label><input id="born" name="born" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="1946" required></div>
+      </div>
+      <div class="field"><label for="a1">Artists they loved</label>
+        <input id="a1" list="artists" maxlength="80" autocomplete="off" aria-describedby="artist-help" required>
+        <input id="a2" list="artists" maxlength="80" autocomplete="off" aria-label="Second artist, optional">
+        <input id="a3" list="artists" maxlength="80" autocomplete="off" aria-label="Third artist, optional">
+        <small id="artist-help">Start typing and pick from the list.</small>
+        <datalist id="artists"></datalist>
+      </div>
+      <div class="field"><label for="shelf">Don't know names?</label>
+        <select id="shelf"><option value="">Start from a country</option></select>
+        <small>Fills in well-known artists from that country. Change them freely.</small>
+      </div>
+      <p class="error" id="error" role="alert"></p>
+      <div><button class="button" type="submit" id="submit">Build the session</button></div>
+    </form>
+  </section>
+</main>
+<footer>An activity planner for family caregivers, not therapy or medical advice. Music and films found with Qloo. <a href="/privacy.html">Privacy</a> · <a href="https://github.com/tanishmisra9/memory-lane">Source</a></footer>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

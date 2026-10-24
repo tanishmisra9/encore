@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>What works · Memory Lane</title>
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="/style.css">
+<style>.sheet h2{margin-top:32px}.sheet ul{padding-left:20px}.sheet li{margin:6px 0}@media print{.sheet{color:#000}.sheet a{color:#000}}</style></head>
+<body><header class="noprint"><a href="/">Memory Lane</a></header>
+<main class="sheet"><h1 id="heading" style="max-width:none;font-size:clamp(34px,6vw,56px)">What works</h1><p class="note" id="sub"></p>
+<div id="groups"></div>
+<p class="note">Made with Memory Lane, a caregiver activity planner. Not therapy or medical advice.</p>
+<div class="actions noprint"><button class="button" onclick="print()">Print this page</button><a class="link" href="/">Back</a></div></main>
+<script type="module">
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const id=new URLSearchParams(location.search).get('id');
+try{
+  const r=await fetch(`/api/sessions/${id}`);const s=await r.json();if(!r.ok)throw new Error(s.error);
+  const who=s.name||'This person';document.title=`What works for ${who} · Memory Lane`;
+  document.getElementById('heading').textContent=`What works for ${who}`;
+  document.getElementById('sub').textContent=`Born ${s.born}. Songs and shows from ${s.born+10} to ${s.born+30}.`;
+  const label=i=>`${esc(i.title)}${i.by?` · ${esc(i.by)}`:''}`;
+  const groups=[['Smiled','smiled'],['Okay','neutral'],['Upset. Avoid these','upset']];
+  let html='';for(const [name,key] of groups){const items=s.plan.filter(i=>i.reaction===key&&i.by!==undefined||i.reaction===key&&i.kind!=='song');if(items.length)html+=`<h2>${name}</h2><ul>${items.map(i=>`<li>${label(i)}</li>`).join('')}</ul>`;}
+  const fresh=s.plan.filter(i=>!i.reaction);if(fresh.length)html+=`<h2>Not tried yet</h2><ul>${fresh.map(i=>`<li>${label(i)}</li>`).join('')}</ul>`;
+  document.getElementById('groups').innerHTML=html||'<p>No reactions recorded yet.</p>';
+}catch(e){document.getElementById('groups').innerHTML=`<p class="error">${esc(e.message||'This session was deleted or expired.')}</p>`;}
+</script></body></html>

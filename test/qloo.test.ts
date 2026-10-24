@@ -25,6 +25,7 @@ test('anchor resolution rejects a fuzzy match whose name differs', async () => {
 test('agent re-anchors until enough safe in-era artists, then stops at the hop limit', async () => {
   let insights = 0;
   await withFetch(url => {
+    if (url.includes('itunes.apple.com')) return Response.json({ results: [{ trackName: 'Anchor Song', artistName: 'Anchor', previewUrl: 'p', releaseDate: '1964-05-01T00:00:00Z' }, { trackName: 'Too Late', artistName: 'Anchor', previewUrl: 'p', releaseDate: '1999-01-01T00:00:00Z' }, { trackName: 'Other Artist', artistName: 'Zed', previewUrl: 'p', releaseDate: '1964-01-01T00:00:00Z' }] });
     if (url.includes('/search?')) return Response.json({ results: [{ entity_id: 'anchor', name: 'Anchor' }] });
     if (url.includes('urn%3Aentity%3Aartist')) { insights++; const base = insights * 100; return Response.json({ results: { entities: Array.from({ length: 5 }, (_, i) => ent(`h${base + i}`, `Artist ${base + i}`)) } }); }
     return Response.json({ results: { entities: [{ ...ent('m1', 'A Film'), properties: { release_year: 1966, image: { url: 'i' } } }] } });
@@ -33,6 +34,8 @@ test('agent re-anchors until enough safe in-era artists, then stops at the hop l
     assert.equal(insights, 3, 'three hops of five artists never reach fifteen safe, so it stops at the limit');
     assert.equal(result.pool.artists.length, 16, 'the named artist plus fifteen found');
     assert.deepEqual(result.unresolved, ['Missing']);
+    const named = result.pool.artists.find(a => a.id === 'anchor')!;
+    assert.deepEqual(named.known, [{ title: 'Anchor Song', year: 1964, previewUrl: 'p' }], 'only an in-window, name-matched song counts');
     assert.ok(result.trace.some(s => s.text.startsWith('Kept artists active 1956 to 1976')));
     assert.deepEqual(result.pool.media.map(m => m.kind), ['film', 'show']);
   });
@@ -60,4 +63,16 @@ test('preview requires the artist name to match and caches misses', async () => 
     assert.equal(await previewFor('Other', 'Nana Mouskouri', cache), null);
   });
   void memoryCache;
+});
+
+test('a named artist with no songs inside the window is left out, with the reason in the trace', async () => {
+  await withFetch(url => {
+    if (url.includes('itunes.apple.com')) return Response.json({ results: [{ trackName: 'Late', artistName: 'Anchor', previewUrl: 'p', releaseDate: '2010-01-01T00:00:00Z' }] });
+    if (url.includes('/search?')) return Response.json({ results: [{ entity_id: 'anchor', name: 'Anchor' }] });
+    return Response.json({ results: { entities: [] } });
+  }, async () => {
+    const result = await runAgent({ born: 1946, anchors: ['Anchor'] }, 'k-late', fresh());
+    assert.ok(result.trace.some(s => s.text.includes('Left out Anchor')));
+    assert.equal(result.pool.artists.length, 0);
+  });
 });

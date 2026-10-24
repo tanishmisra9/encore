@@ -87,3 +87,9 @@ test('refill replaces an upset song with a new artist, keeps reacted-and-kept it
   const small = buildPlan(few, profile).map(i => ({ ...i, reaction: 'upset' as const }));
   assert.equal(refill(small, few, { ...profile, banned: ['0', '1'] }).every(i => i.title === 'No further song fits'), true);
 });
+
+test('a named artist with dated songs gets an exact year and age and a preview', () => {
+  const named = artist('anchor', { start: 1964, known: [{ title: 'Dated', year: 1964, previewUrl: 'p' }], songs: ['Dated'] });
+  const [item] = buildPlan({ artists: [named], media: [] }, profile);
+  assert.deepEqual([item.title, item.year, item.age, item.ages, item.previewUrl, item.found], ['Dated', 1964, 18, [18, 18], 'p', false]);
+});
