@@ -14,6 +14,11 @@ colors:
   stock-mustard: "#e9b21a"
   stock-green: "#1a7a43"
   stock-cobalt: "#2858c8"
+  on-stock-white: "#ffffff"
+  strip-hover: "#ece5d4"
+  placeholder: "#6b6359"
+  error-soft: "#ffb4a8"
+  print-black: "#000000"
 typography:
   display:
     fontFamily: "Barlow Condensed, Arial Narrow, sans-serif"
@@ -32,6 +37,19 @@ typography:
     fontSize: "18px"
     fontWeight: 400
     lineHeight: 1.55
+  note:
+    fontFamily: "Barlow, system-ui, sans-serif"
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: 1.5
+  reaction:
+    fontFamily: "Barlow, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 600
+  caption:
+    fontFamily: "Barlow, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 400
   button:
     fontFamily: "Barlow Condensed, Arial Narrow, sans-serif"
     fontSize: "20px"
@@ -100,7 +118,8 @@ A committed palette: one warm black field, off-white strips, and four printing s
 ### Neutral
 - **Cabinet Black** (#17120f): the page field. **Cabinet Panel** (#221b16) and **Cabinet Line** (#3a3027): quiet dividers and the blank-strip outline.
 - **Paper** (#f3ede2) and **Paper Muted** (#b3a898): text on the cabinet (15.9:1 and 7.9:1).
-- **Strip Card** (#faf6ec), **Ink** (#14110e), **Soft Ink** (#5d544a): the strip and form surfaces (17.4:1 and 6.9:1).
+- **Strip Card** (#faf6ec), **Ink** (#14110e), **Soft Ink** (#5d544a): the strip and form surfaces (17.4:1 and 6.9:1). **Strip Hover** (#ece5d4) tints a reaction button on hover; **Placeholder** (#6b6359) is the field hint; **On-stock White** (#ffffff) is text on red, green and cobalt; **Print Black** (#000000) is used only in the print stylesheet.
+- **Error Soft** (#ffb4a8): error text on the cabinet (10.9:1).
 
 ### Named Rules
 **The Stock Rule.** A stock color appears only on a code block, a play block, or the primary action. Never on body text or backgrounds of regions.
@@ -117,6 +136,9 @@ A committed palette: one warm black field, off-white strips, and four printing s
 - **Display** (700, clamp 38 to 60px, 1.0): the thesis headline; one yellow line for emphasis.
 - **Headline** (700, 28px, 1.1, uppercase): section titles ("Example, born 1946", "Make one").
 - **Title** (700, 26px, 1.05, uppercase): a song or film on a strip.
+- **Note** (400, 15px, 1.5): strip meta, the color key, helper text under fields.
+- **Reaction** (600, 16px): Smiled, Okay, Upset.
+- **Caption** (400, 13px): the "No preview" cell only.
 - **Body** (400, 18px, 1.55): copy; the lede is 20px at about 40 characters per line.
 - **Label** (600 Barlow Condensed, 18 to 20px, 0.06em, uppercase): buttons and presets.
 
