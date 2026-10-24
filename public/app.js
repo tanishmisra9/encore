@@ -23,15 +23,14 @@ async function api(path, options) {
 function stopAudio() { audio?.pause(); audio = null; playingId = null; }
 function stripHtml(item, index) {
   const stock = STOCKS[index % STOCKS.length], song = item.kind === 'song', was = session.name ? 'was' : 'were', person = session.name || 'They';
-  // The headline says "when they were 19", so show the age nearest 19 at which the artist was active.
-  const near = song ? Math.min(Math.max(19, item.ages[0]), item.ages[1]) : 0;
-  const meta = song ? (item.ages[0] === item.ages[1] ? `${item.year}. ${person} ${was} ${item.age}` : `Active when ${person.toLowerCase() === 'they' ? 'they' : person} ${was} ${near}`) : `${item.kind === 'film' ? 'Film' : 'Show'}, ${item.year}. ${person} ${was} ${item.age}`;
+  // Found songs carry no per-song year, so they show no meta line rather than a repeated vague one.
+  const meta = song ? (item.ages[0] === item.ages[1] ? `${item.year}. ${person} ${was} ${item.age}` : '') : `${item.kind === 'film' ? 'Film' : 'Show'}, ${item.year}. ${person} ${was} ${item.age}`;
   const side = !song ? `<button class="play rate" data-rate aria-label="Rate ${esc(item.title)}">Rate</button>` : item.previewUrl ? `<button class="play" data-play="${esc(item.id)}" aria-label="Play ${esc(item.title)} by ${esc(item.by)}">${PLAY}</button>` : '<span class="nopreview">No preview</span>';
   const react = ['smiled', 'neutral', 'upset'].map(r => `<button data-react="${r}" data-item="${esc(item.id)}" aria-pressed="${item.reaction === r}">${LABEL[r]}</button>`).join('');
   const open = item.reaction ? 'open' : '';
   return `<article class="strip s-${stock} ${open}" style="--i:${index}" data-id="${esc(item.id)}">
     <div class="code" aria-hidden="true">${esc(item.code)}</div>
-    <div class="text"><h3 class="title"><button class="toggle" aria-expanded="${!!open}">${esc(item.title)}</button></h3>${item.by ? `<p class="by">${esc(item.by)}</p>` : ''}<p class="meta">${meta}</p></div>
+    <div class="text"><h3 class="title"><button class="toggle" aria-expanded="${!!open}">${esc(item.title)}</button></h3>${item.by ? `<p class="by">${esc(item.by)}</p>` : ''}${meta ? `<p class="meta">${meta}</p>` : ''}</div>
     ${side}<div class="react" role="group" aria-label="How did ${esc(item.title)} land?">${react}</div><div class="bar" aria-hidden="true"></div></article>`;
 }
 function render(animate = true) {
