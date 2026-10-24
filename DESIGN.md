@@ -3,7 +3,6 @@ name: Memory Lane
 description: A jukebox title-strip wall for caregiver reminiscence sessions.
 colors:
   cabinet: "#17120f"
-  cabinet-panel: "#221b16"
   cabinet-line: "#3a3027"
   paper: "#f3ede2"
   paper-muted: "#b3a898"
@@ -101,13 +100,13 @@ It refuses the soft-focus caregiving app, the dark music-grid app, and the agent
 
 **Key Characteristics:**
 - Strips are the only repeating unit; everything else is plain type on the cabinet.
-- Stock color (red, mustard, green, cobalt) belongs to the code block and the play block, nowhere else except the primary action.
+- Stock color (red, green, cobalt) belongs to the code block, the play block and the playing strip's progress bar. Mustard is only the action color.
 - Square corners, thin ink rules, no shadows.
 - Sparse: generous empty space, no filler sections.
 
 ## Colors
 
-A committed palette: one warm black field, off-white strips, and four printing stocks.
+A committed palette: one warm black field, off-white strips, three printing stocks, and mustard reserved for the action.
 
 ### Primary
 - **Mustard Stock** (#e9b21a): the single action color (primary button, focus ring, playing-strip ring, headline emphasis). It is never a strip stock.
@@ -116,13 +115,13 @@ A committed palette: one warm black field, off-white strips, and four printing s
 - **Red Stock** (#c62d26), **Green Stock** (#1a7a43), **Cobalt Stock** (#2858c8): code blocks and play blocks. Color is meaning, with a one-line key under the wall heading: cobalt is a song the caregiver named, red a song Qloo found, green a film or show. White text on red, green and cobalt; ink on mustard.
 
 ### Neutral
-- **Cabinet Black** (#17120f): the page field. **Cabinet Panel** (#221b16) and **Cabinet Line** (#3a3027): quiet dividers and the blank-strip outline.
+- **Cabinet Black** (#17120f): the page field. **Cabinet Line** (#3a3027): the preset outlines, the blank-strip outline and the footer rule.
 - **Paper** (#f3ede2) and **Paper Muted** (#b3a898): text on the cabinet (15.9:1 and 7.9:1).
 - **Strip Card** (#faf6ec), **Ink** (#14110e), **Soft Ink** (#5d544a): the strip and form surfaces (17.4:1 and 6.9:1). **Strip Hover** (#ece5d4) tints a reaction button on hover; **Placeholder** (#6b6359) is the field hint; **On-stock White** (#ffffff) is text on red, green and cobalt; **Print Black** (#000000) is used only in the print stylesheet.
 - **Error Soft** (#ffb4a8): error text on the cabinet (10.9:1).
 
 ### Named Rules
-**The Stock Rule.** A stock color appears only on a code block, a play block, or the primary action. Never on body text or backgrounds of regions.
+**The Stock Rule.** A stock color appears only on a code block, a play block, or the playing strip's progress bar. Never on body text or the backgrounds of regions. Mustard is the action color and is never a stock.
 **The Two Surfaces Rule.** Cabinet black or strip card, nothing between. No gray panels.
 
 ## Typography
@@ -143,11 +142,11 @@ A committed palette: one warm black field, off-white strips, and four printing s
 - **Label** (600 Barlow Condensed, 18 to 20px, 0.06em, uppercase): buttons and presets.
 
 ### Named Rules
-**The One Voice Rule.** Condensed capitals are for titles, buttons and labels. Running text is never condensed or uppercase.
+**The One Voice Rule.** Condensed capitals are for titles, buttons, labels and the printed status line on a blank strip. Running text is never condensed or uppercase.
 
 ## Layout
 
-Single column on phones. At 960px the page splits 5 to 7: the thesis and action stay sticky on the left, the wall (example presets, strips, prompts) fills the right, so the first screen already shows songs. The form sits below, left-aligned at 680px, with generous space around it (96px above). Strips stack with 12px gaps; spacing steps are 8, 12, 16, 24, 56. Headings have more space above (24px) than below (4px). Every control is at least 44px tall with 8px between targets, and the page never scrolls sideways.
+Single column on phones. At 960px the page splits 5 to 7: the thesis and action stay sticky on the left, the wall (example presets, strips, prompts) fills the right, so the first screen already shows songs. The form sits below, left-aligned at 680px, with generous space around it (96px above). Strips stack with 12px gaps; spacing runs on 4, 8, 12, 16, 20, 24, 28, 32, 56, 64 and 96. Headings have more space above (24px) than below (4px). Every control is at least 44px tall with 8px between targets, and the page never scrolls sideways.
 
 ## Elevation & Depth
 
@@ -187,7 +186,7 @@ Square. Every control, strip and field uses a 2px radius; nothing in the build e
 ### Don't:
 - **Don't** use pills, circles or any radius above 2px.
 - **Don't** add shadows, gradients, glass, sepia or photographic washes.
-- **Don't** use emoji or face icons; the only icon is the drawn play and pause.
+- **Don't** use emoji or face icons; the only drawn marks are play, pause, and the chevron on "How it chose".
 - **Don't** repeat a fact on every strip; per-item explanations live behind "How it chose".
 
 ## Not canonized (defects the build carries)
