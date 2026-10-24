@@ -34,7 +34,7 @@ test('agent re-anchors until enough safe in-era artists, then stops at the hop l
     assert.equal(result.pool.artists.length, 15);
     assert.deepEqual(result.unresolved, ['Missing']);
     assert.ok(result.trace.some(s => s.text.startsWith('Kept artists active 1956 to 1976')));
-    assert.equal(result.pool.media.length, 1);
+    assert.deepEqual(result.pool.media.map(m => m.kind), ['film', 'show']);
   });
 });
 test('agent fails clearly when no anchor resolves', async () => {
