@@ -112,7 +112,7 @@ export async function runAgent(input: { born: number; anchors: string[] }, key: 
 
 // Qloo's search results carry no era data, so for the artists a caregiver names, iTunes supplies dated songs inside the window.
 export async function datedSongs(artist: string, from: number, to: number, cache: Cache = memoryCache): Promise<{ title: string; year: number; previewUrl: string }[]> {
-  const id = `itunes-dated:${norm(artist)}:${from}:${to}`, hit = await cache.get(id);
+  const id = `itunes-dated2:${norm(artist)}:${from}:${to}`, hit = await cache.get(id);
   if (hit) return hit as { title: string; year: number; previewUrl: string }[];
   const response = await fetch(`https://itunes.apple.com/search?${new URLSearchParams({ term: artist, media: 'music', entity: 'song', attribute: 'artistTerm', limit: '50' })}`).catch(() => null);
   if (!response?.ok) return [];
