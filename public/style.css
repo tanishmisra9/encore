@@ -88,10 +88,14 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--mustard); b
 .note { color: var(--muted); font-size: 16px; max-width: 62ch; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .strip { animation: set .22s ease-out both; animation-delay: calc(var(--i, 0) * 40ms); }
+  .wall:not(.still) .strip { animation: set .22s ease-out both; animation-delay: calc(var(--i, 0) * 40ms); }
   @keyframes set { from { opacity: 0; transform: translateY(6px); } }
 }
 @media print {
   html, body { background: #fff; color: #000; } header, footer, .noprint { display: none; }
 }
 ::placeholder { color: #6b6359; opacity: 1; }
+
+::selection { background: var(--mustard); color: var(--ink); }
+:root { accent-color: var(--mustard); caret-color: var(--ink); color-scheme: dark; }
+.strip .toggle:hover { text-decoration: underline; text-underline-offset: 4px; }

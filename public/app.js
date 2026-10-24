@@ -37,7 +37,8 @@ function stripHtml(item, index) {
     <div class="text"><h3 class="title"><button class="toggle" aria-expanded="${!!open}">${esc(item.title)}</button></h3>${item.by ? `<p class="by">${esc(item.by)}</p>` : ''}<p class="meta">${meta}</p></div>
     ${play}<div class="react" role="group" aria-label="How did ${esc(item.title)} land?">${react}</div><div class="bar" aria-hidden="true"></div></article>`;
 }
-function render() {
+function render(animate = true) {
+  $('#wall').classList.toggle('still', !animate);
   $('#wall').innerHTML = session.plan.map(stripHtml).join('');
   $('#prompts').innerHTML = session.prompts.map(p => `<li>${esc(p)}</li>`).join('');
   $('#trace').innerHTML = session.trace.map(t => `<li>${esc(t.text)}${t.kept !== undefined ? ` Kept ${t.kept}${t.dropped ? `, set aside ${t.dropped}` : ''}.` : ''}</li>`).join('');
@@ -48,7 +49,7 @@ function blank(text) {
   $('#wall').innerHTML = `<article class="strip blank"><div class="code" aria-hidden="true">--</div><div class="text">${esc(text)}</div></article>`;
   $('#after').hidden = true;
 }
-function title(heading, sub) { $('#wall-title').textContent = heading; $('#wall-sub').textContent = sub; }
+function title(heading, sub) { $('#wall-title').textContent = heading; $('#wall-sub').textContent = sub; $('#wall-sub').dataset.sub = sub; }
 const era = born => `${born + 10} to ${born + 30}`;
 
 async function build(input, heading, sub) {
@@ -76,7 +77,7 @@ $('#wall').addEventListener('click', async event => {
   if (play) {
     const id = play.dataset.play, item = session.plan.find(i => i.id === id), same = playingId === id;
     document.querySelectorAll('.strip.playing').forEach(s => { s.classList.remove('playing'); s.querySelector('.play').innerHTML = PLAY; s.querySelector('.bar').style.transform = 'scaleX(0)'; });
-    stopAudio(); if (same) return;
+    stopAudio(); $('#wall-sub').textContent = $('#wall-sub').dataset.sub || ''; if (same) return;
     audio = new Audio(item.previewUrl); playingId = id;
     const strip = play.closest('.strip'); strip.classList.add('playing', 'open'); strip.querySelector('.toggle').setAttribute('aria-expanded', 'true'); play.innerHTML = STOP;
     audio.addEventListener('timeupdate', () => { if (audio) strip.querySelector('.bar').style.transform = `scaleX(${audio.currentTime / (audio.duration || 30)})`; });
@@ -85,7 +86,7 @@ $('#wall').addEventListener('click', async event => {
   }
   if (react && !busy) {
     busy = true; stopAudio();
-    try { session = { ...session, ...await api(`/api/sessions/${session.id}/react`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemId: react.dataset.item, reaction: react.dataset.react }) }) }; render(); }
+    try { session = { ...session, ...await api(`/api/sessions/${session.id}/react`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemId: react.dataset.item, reaction: react.dataset.react }) }) }; render(false); }
     catch (error) { $('#error').textContent = error.message; }
     finally { busy = false; }
   }
