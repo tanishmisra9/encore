@@ -95,7 +95,7 @@ A committed palette: one warm black field, off-white strips, and four printing s
 - **Mustard Stock** (#e9b21a): the single action color (primary button, focus ring, playing-strip ring, headline emphasis) and a strip stock.
 
 ### Secondary
-- **Red Stock** (#c62d26), **Green Stock** (#1a7a43), **Cobalt Stock** (#2858c8): code blocks and play blocks, rotated by position (red, mustard, green, cobalt). White text on red, green and cobalt; ink on mustard.
+- **Red Stock** (#c62d26), **Green Stock** (#1a7a43), **Cobalt Stock** (#2858c8): code blocks and play blocks, assigned by kind of item. Color is meaning: mustard is a song the caregiver named, red a song Qloo found, cobalt a film, green a show. White text on red, green and cobalt; ink on mustard.
 
 ### Neutral
 - **Cabinet Black** (#17120f): the page field. **Cabinet Panel** (#221b16) and **Cabinet Line** (#3a3027): quiet dividers and the blank-strip outline.
@@ -147,7 +147,7 @@ Square. Every control, strip and field uses a 2px radius; nothing in the build e
 - Four outlined 1px cabinet-line squares (US, Mexico, Greece, India) in one row, paper text, 44px tall; the selected one is filled paper with ink text.
 
 ### Strip
-- Code block (56px, stock color), text (title, artist, meta), play block (56px, stock color, white or ink glyph). Tapping the title, or the Rate block on films and shows, opens a three-button row (Smiled, Okay, Upset) in text only; the selected reaction fills ink. Press play opens it too.
+- Code block (56px, stock color), text (title, artist, meta), play block (56px, stock color, white or ink glyph). Tapping the strip text, or the React block on films and shows, opens a three-button row (Smiled, Okay, Upset) in text only; the selected reaction fills ink. Press play opens it too.
 
 ### Inputs / Fields
 - **Style:** strip-card fill, 2px muted border, 52px tall, ink text.

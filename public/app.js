@@ -1,5 +1,4 @@
 const $ = s => document.querySelector(s);
-const STOCKS = ['red', 'mustard', 'green', 'cobalt'];
 const PRESETS = {
   us: { name: '', born: 1946, anchors: ['Frank Sinatra', 'Elvis Presley'] },
   mexico: { name: '', born: 1950, anchors: ['Vicente Fernández', 'José José'] },
@@ -22,10 +21,11 @@ async function api(path, options) {
 
 function stopAudio() { audio?.pause(); audio = null; playingId = null; }
 function stripHtml(item, index) {
-  const stock = STOCKS[index % STOCKS.length], song = item.kind === 'song', was = session.name ? 'was' : 'were', person = session.name || 'They';
+  // Stock color carries meaning: mustard is a song they named, red a song Qloo found, cobalt a film, green a show.
+  const stock = item.kind === 'film' ? 'cobalt' : item.kind === 'show' ? 'green' : item.found ? 'red' : 'mustard', song = item.kind === 'song', was = session.name ? 'was' : 'were', person = session.name || 'They';
   // Found songs carry no per-song year, so they show no meta line rather than a repeated vague one.
   const meta = song ? (item.ages[0] === item.ages[1] ? `${item.year}. ${person} ${was} ${item.age}` : '') : `${item.kind === 'film' ? 'Film' : 'Show'}, ${item.year}. ${person} ${was} ${item.age}`;
-  const side = !song ? `<button class="play rate" data-rate aria-label="Rate ${esc(item.title)}">Rate</button>` : item.previewUrl ? `<button class="play" data-play="${esc(item.id)}" aria-label="Play ${esc(item.title)} by ${esc(item.by)}">${PLAY}</button>` : '<span class="nopreview">No preview</span>';
+  const side = !song ? `<button class="play rate" data-rate aria-label="React to ${esc(item.title)}">React</button>` : item.previewUrl ? `<button class="play" data-play="${esc(item.id)}" aria-label="Play ${esc(item.title)} by ${esc(item.by)}">${PLAY}</button>` : '<span class="nopreview">No preview</span>';
   const react = ['smiled', 'neutral', 'upset'].map(r => `<button data-react="${r}" data-item="${esc(item.id)}" aria-pressed="${item.reaction === r}">${LABEL[r]}</button>`).join('');
   const open = item.reaction ? 'open' : '';
   return `<article class="strip s-${stock} ${open}" style="--i:${index}" data-id="${esc(item.id)}">
@@ -68,7 +68,7 @@ document.querySelectorAll('.preset').forEach(button => button.addEventListener('
 }));
 
 $('#wall').addEventListener('click', async event => {
-  const toggle = event.target.closest('.toggle') || (event.target.closest('[data-rate]') && event.target.closest('.strip').querySelector('.toggle')), play = event.target.closest('[data-play]'), react = event.target.closest('[data-react]');
+  const toggle = event.target.closest('.toggle') || (event.target.closest('.text') && !event.target.closest('.toggle') ? event.target.closest('.strip').querySelector('.toggle') : null) || (event.target.closest('[data-rate]') && event.target.closest('.strip').querySelector('.toggle')), play = event.target.closest('[data-play]'), react = event.target.closest('[data-react]');
   if (toggle) { const strip = toggle.closest('.strip'); const open = strip.classList.toggle('open'); toggle.setAttribute('aria-expanded', String(open)); }
   if (play) {
     const id = play.dataset.play, item = session.plan.find(i => i.id === id), same = playingId === id;
