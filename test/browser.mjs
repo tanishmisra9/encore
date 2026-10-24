@@ -35,7 +35,7 @@ try {
     await page.waitForFunction(t => [...document.querySelectorAll('.strip.reacted-smiled .title')].some(e => e.textContent === t), keep, { timeout: 60000 });
     const href = await page.locator('#summary-link').getAttribute('href');
     await page.goto(base + href); await page.getByRole('heading', { name: /What works/ }).waitFor();
-    assert.ok((await page.locator('#groups').textContent()).includes(keep), `${name}: summary lists the smiled song`);
+    await page.waitForFunction(t => document.querySelector('#groups')?.textContent.includes(t), keep, { timeout: 30000 });
     if (shots) await page.screenshot({ path: `${shots}/${name}-summary.png`, fullPage: true });
     // Delete makes the session disappear.
     const id = new URL(base + href).searchParams.get('id');

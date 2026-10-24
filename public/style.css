@@ -94,3 +94,4 @@ input:focus-visible, select:focus-visible { outline: 3px solid var(--mustard); b
 @media print {
   html, body { background: #fff; color: #000; } header, footer, .noprint { display: none; }
 }
+::placeholder { color: #6b6359; opacity: 1; }

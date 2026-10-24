@@ -4,5 +4,5 @@
   "compatibility_date": "2026-10-22",
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "triggers": { "crons": ["0 4 * * *"] },
-  "d1_databases": [{ "binding": "DB", "database_name": "memory-lane", "database_id": "17e007a9-3a53-466e-851b-3725a75f2c5f" }]
+  "d1_databases": [{ "binding": "DB", "database_name": "memory-lane", "database_id": "ccc76c3b-8662-44f1-9c3e-87d940fe5672" }]
 }
