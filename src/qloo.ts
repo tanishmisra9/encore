@@ -123,7 +123,9 @@ export async function datedSongs(artist: string, from: number, to: number, cache
     if (!r.previewUrl || !title || !norm(r.artistName || '').includes(lead) || year < from || year > to || seen.has(norm(title))) continue;
     seen.add(norm(title)); out.push({ title, year, previewUrl: r.previewUrl });
   }
-  out.sort((a, b) => a.year - b.year);
+  // Keep the songs nearest the middle of the window (about age 20), not simply the oldest.
+  const middle = (from + to) / 2;
+  out.sort((a, b) => Math.abs(a.year - middle) - Math.abs(b.year - middle));
   const result = out.slice(0, 3);
   if (result.length) await cache.set(id, result, 7 * 24 * 3600_000);
   return result;

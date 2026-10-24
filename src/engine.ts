@@ -44,9 +44,11 @@ export function validate(input: unknown): { born: number; name?: string; anchors
   return { born, name: name || undefined, anchors: unique };
 }
 
+// The headline promises "when they were 19", so artists active around ages 15 to 25 outrank ones that only touch the edges of the window.
+const core = (artist: Artist, born: number) => artist.known?.length ? 1.15 : artist.start !== undefined && artist.start <= born + 25 && (artist.end ?? Infinity) >= born + 15 ? 1.15 : 1;
 const weight = (profile: Profile, artist: Artist) => artist.genres.length ? Math.max(...artist.genres.map(g => profile.weights[g] ?? 1)) : 1;
 // Qloo order is the base ranking; learned genre weights bend it.
-const ranked = (pool: Artist[], profile: Profile) => pool.map((artist, order) => ({ artist, score: weight(profile, artist) * (1 - order / (pool.length + 10)) }))
+const ranked = (pool: Artist[], profile: Profile) => pool.map((artist, order) => ({ artist, score: weight(profile, artist) * core(artist, profile.born) * (1 - order / (pool.length + 10)) }))
   .sort((a, b) => b.score - a.score).map(entry => entry.artist);
 
 export function eligible(pool: Pool, profile: Profile): Artist[] {
@@ -55,7 +57,8 @@ export function eligible(pool: Pool, profile: Profile): Artist[] {
 
 function songItem(artist: Artist, profile: Profile, code: string, used: Set<string>): Item {
   // Artists the caregiver named come with songs dated by iTunes, so their year and age are exact.
-  const dated = artist.known?.find(song => !used.has(key(song.title))) ?? artist.known?.[0];
+  const nearest = [...(artist.known ?? [])].sort((a, b) => Math.abs(a.year - profile.born - 19) - Math.abs(b.year - profile.born - 19));
+  const dated = nearest.find(song => !used.has(key(song.title))) ?? nearest[0];
   if (dated) return { id: `${artist.id}:${dated.title}`, kind: 'song', code, title: dated.title, by: artist.name, artistId: artist.id, genres: artist.genres, year: dated.year, age: dated.year - profile.born, ages: [dated.year - profile.born, dated.year - profile.born], image: artist.image, previewUrl: dated.previewUrl, found: false, notes: [`released ${dated.year}`] };
   const title = artist.songs.find(song => !used.has(key(song))) ?? artist.songs[0];
   // Qloo gives the artist's active years, not each song's release year, so show the ages they were active within the window.

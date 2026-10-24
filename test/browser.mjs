@@ -32,7 +32,7 @@ try {
     // Smiled is kept and reflected in the summary.
     const second = page.locator('.strip').nth(1), keep = await second.locator('.title').textContent();
     await second.locator('.toggle').click(); await second.locator('[data-react="smiled"]').click();
-    await page.waitForFunction(t => [...document.querySelectorAll('.strip.reacted-smiled .title')].some(e => e.textContent === t), keep, { timeout: 60000 });
+    await page.waitForFunction(t => [...document.querySelectorAll('.strip')].some(el => el.querySelector('[data-react="smiled"][aria-pressed="true"]') && el.querySelector('.title').textContent === t), keep, { timeout: 60000 });
     assert.ok(await page.locator('#wall.still').count(), `${name}: a reaction does not replay the entrance animation`);
     const href = await page.locator('#summary-link').getAttribute('href');
     await page.goto(base + href); await page.getByRole('heading', { name: /What works/ }).waitFor();

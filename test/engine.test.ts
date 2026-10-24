@@ -99,3 +99,10 @@ test('one act under two names, and one song under two spellings, appear once', (
   const plan = buildPlan({ artists: [a, b, c, artist('d')], media: [] }, profile);
   assert.deepEqual(plan.map(i => i.by), ['Bob Marley', 'Artist d']);
 });
+
+test('artists active around ages 15 to 25 outrank ones that only touch the window, and named songs pick the year nearest 19', () => {
+  const edge = artist('edge', { start: 1900, end: 1957 }), middle = artist('middle', { start: 1962, end: 1980 });
+  assert.deepEqual(buildPlan({ artists: [edge, middle], media: [] }, profile).map(i => i.artistId), ['middle', 'edge']);
+  const named = artist('n', { start: 1956, known: [{ title: 'Ten', year: 1956, previewUrl: 'a' }, { title: 'Nineteen', year: 1965, previewUrl: 'b' }], songs: ['Ten', 'Nineteen'] });
+  assert.equal(buildPlan({ artists: [named], media: [] }, profile)[0].title, 'Nineteen');
+});

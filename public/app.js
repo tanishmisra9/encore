@@ -6,11 +6,6 @@ const PRESETS = {
   greece: { name: '', born: 1947, anchors: ['Nana Mouskouri', 'Mikis Theodorakis'] },
   india: { name: '', born: 1948, anchors: ['Lata Mangeshkar', 'Kishore Kumar'] },
 };
-const ICONS = {
-  smiled: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 14c1 2 7 2 8 0M9 9.5h.01M15 9.5h.01"/></svg>',
-  neutral: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 15h8M9 9.5h.01M15 9.5h.01"/></svg>',
-  upset: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 16c1-2 7-2 8 0M9 9.5h.01M15 9.5h.01"/></svg>',
-};
 const LABEL = { smiled: 'Smiled', neutral: 'Okay', upset: 'Upset' };
 const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>', STOP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -27,15 +22,17 @@ async function api(path, options) {
 
 function stopAudio() { audio?.pause(); audio = null; playingId = null; }
 function stripHtml(item, index) {
-  const stock = STOCKS[index % STOCKS.length], song = item.kind === 'song', was = session.name ? 'was' : 'were';
-  const exact = song && item.ages[0] === item.ages[1], meta = song ? (exact ? `${item.year}. ${session.name ? session.name : 'They'} ${was} ${item.age}` : `Ages ${item.ages[0]} to ${item.ages[1]}`) : `${item.kind === 'film' ? 'Film' : 'Show'}, ${item.year}. ${session.name ? session.name : 'They'} ${was} ${item.age}`;
-  const play = !song ? '' : item.previewUrl ? `<button class="play" data-play="${esc(item.id)}" aria-label="Play ${esc(item.title)} by ${esc(item.by)}">${PLAY}</button>` : '<span class="nopreview">No preview</span>';
-  const react = ['smiled', 'neutral', 'upset'].map(r => `<button data-react="${r}" data-item="${esc(item.id)}" aria-pressed="${item.reaction === r}">${ICONS[r]}${LABEL[r]}</button>`).join('');
+  const stock = STOCKS[index % STOCKS.length], song = item.kind === 'song', was = session.name ? 'was' : 'were', person = session.name || 'They';
+  // The headline says "when they were 19", so show the age nearest 19 at which the artist was active.
+  const near = song ? Math.min(Math.max(19, item.ages[0]), item.ages[1]) : 0;
+  const meta = song ? (item.ages[0] === item.ages[1] ? `${item.year}. ${person} ${was} ${item.age}` : `Active when ${person.toLowerCase() === 'they' ? 'they' : person} ${was} ${near}`) : `${item.kind === 'film' ? 'Film' : 'Show'}, ${item.year}. ${person} ${was} ${item.age}`;
+  const side = !song ? `<button class="play rate" data-rate aria-label="Rate ${esc(item.title)}">Rate</button>` : item.previewUrl ? `<button class="play" data-play="${esc(item.id)}" aria-label="Play ${esc(item.title)} by ${esc(item.by)}">${PLAY}</button>` : '<span class="nopreview">No preview</span>';
+  const react = ['smiled', 'neutral', 'upset'].map(r => `<button data-react="${r}" data-item="${esc(item.id)}" aria-pressed="${item.reaction === r}">${LABEL[r]}</button>`).join('');
   const open = item.reaction ? 'open' : '';
-  return `<article class="strip s-${stock} ${song ? '' : 'noplay'} ${item.found ? '' : 'named'} ${open} ${item.reaction === 'smiled' ? 'reacted-smiled' : ''}" style="--i:${index}" data-id="${esc(item.id)}">
+  return `<article class="strip s-${stock} ${open}" style="--i:${index}" data-id="${esc(item.id)}">
     <div class="code" aria-hidden="true">${esc(item.code)}</div>
     <div class="text"><h3 class="title"><button class="toggle" aria-expanded="${!!open}">${esc(item.title)}</button></h3>${item.by ? `<p class="by">${esc(item.by)}</p>` : ''}<p class="meta">${meta}</p></div>
-    ${play}<div class="react" role="group" aria-label="How did ${esc(item.title)} land?">${react}</div><div class="bar" aria-hidden="true"></div></article>`;
+    ${side}<div class="react" role="group" aria-label="How did ${esc(item.title)} land?">${react}</div><div class="bar" aria-hidden="true"></div></article>`;
 }
 function render(animate = true) {
   $('#wall').classList.toggle('still', !animate);
@@ -72,7 +69,7 @@ document.querySelectorAll('.preset').forEach(button => button.addEventListener('
 }));
 
 $('#wall').addEventListener('click', async event => {
-  const toggle = event.target.closest('.toggle'), play = event.target.closest('[data-play]'), react = event.target.closest('[data-react]');
+  const toggle = event.target.closest('.toggle') || (event.target.closest('[data-rate]') && event.target.closest('.strip').querySelector('.toggle')), play = event.target.closest('[data-play]'), react = event.target.closest('[data-react]');
   if (toggle) { const strip = toggle.closest('.strip'); const open = strip.classList.toggle('open'); toggle.setAttribute('aria-expanded', String(open)); }
   if (play) {
     const id = play.dataset.play, item = session.plan.find(i => i.id === id), same = playingId === id;

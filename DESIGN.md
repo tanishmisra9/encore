@@ -129,7 +129,7 @@ Single column on phones. At 960px the page splits 5 to 7: the thesis and action 
 
 ## Elevation & Depth
 
-Flat. Depth is carried by tonal separation: off-white strips on the black cabinet, and ink rules (1px; 3px for songs the caregiver named). There are no shadows. A playing strip gets a 3px mustard ring, and a smiled strip a 6px green bottom edge.
+Flat. Depth is carried by tonal separation: off-white strips on the black cabinet, and a 1px ink rule. There are no shadows. A playing strip gets a 3px mustard ring.
 
 ## Shapes
 
@@ -144,10 +144,10 @@ Square. Every control, strip and field uses a 2px radius; nothing in the build e
 - **Link button:** underlined muted text for low-weight actions (delete).
 
 ### Presets
-- Outlined 1px cabinet-line squares, paper text, 44px tall; the selected one is filled paper with ink text.
+- Four outlined 1px cabinet-line squares (US, Mexico, Greece, India) in one row, paper text, 44px tall; the selected one is filled paper with ink text.
 
 ### Strip
-- Code block (56px, stock color), text (title, artist, meta), play block (56px, stock color, white or ink glyph). Tapping the title opens a three-button row (Smiled, Okay, Upset) with drawn SVG icons and text labels; the selected reaction fills ink.
+- Code block (56px, stock color), text (title, artist, meta), play block (56px, stock color, white or ink glyph). Tapping the title, or the Rate block on films and shows, opens a three-button row (Smiled, Okay, Upset) in text only; the selected reaction fills ink. Press play opens it too.
 
 ### Inputs / Fields
 - **Style:** strip-card fill, 2px muted border, 52px tall, ink text.
@@ -159,16 +159,15 @@ Square. Every control, strip and field uses a 2px radius; nothing in the build e
 ### Do:
 - **Do** keep every control at least 44px tall and every text pair at least 4.5:1.
 - **Do** give each screen one idea and let empty space carry it.
-- **Do** label reactions with text as well as icons.
+- **Do** label every reaction with text; there are no face icons.
 - **Do** respect reduced motion; the only motion is a 220ms strip entrance, played once per build, not on every reaction.
 
 ### Don't:
 - **Don't** use pills, circles or any radius above 2px.
 - **Don't** add shadows, gradients, glass, sepia or photographic washes.
-- **Don't** use emoji as icons; icons are drawn SVG in one 2px stroke.
+- **Don't** use emoji or face icons; the only icon is the drawn play and pause.
 - **Don't** repeat a fact on every strip; per-item explanations live behind "How it chose".
 
 ## Not canonized (defects the build carries)
 
-- Small tracked uppercase labels ("Or try", "Conversation starters") sit above content like eyebrows; they are not a house style and should become plain headings.
 - The zero-offset mustard ring on the playing strip works as a focus-like halo rather than depth; do not reuse it as decoration.
