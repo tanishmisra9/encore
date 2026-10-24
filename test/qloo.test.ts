@@ -19,7 +19,7 @@ test('anchor resolution rejects a fuzzy match whose name differs', async () => {
     assert.equal(await resolveAnchor('Zzqxv Band 9000', 'k', fresh()), null);
   });
   await withFetch(() => Response.json({ results: [{ entity_id: '1', name: 'Nana Mouskouri' }] }), async () => {
-    assert.deepEqual(await resolveAnchor('nana mouskouri', 'k', fresh()), { id: '1', name: 'Nana Mouskouri' });
+    const hit = await resolveAnchor('nana mouskouri', 'k', fresh()); assert.deepEqual([hit?.id, hit?.name], ['1', 'Nana Mouskouri']);
   });
 });
 test('agent re-anchors until enough safe in-era artists, then stops at the hop limit', async () => {
@@ -31,7 +31,7 @@ test('agent re-anchors until enough safe in-era artists, then stops at the hop l
   }, async () => {
     const result = await runAgent({ born: 1946, anchors: ['Anchor', 'Missing'] }, 'k', fresh());
     assert.equal(insights, 3, 'three hops of five artists never reach fifteen safe, so it stops at the limit');
-    assert.equal(result.pool.artists.length, 15);
+    assert.equal(result.pool.artists.length, 16, 'the named artist plus fifteen found');
     assert.deepEqual(result.unresolved, ['Missing']);
     assert.ok(result.trace.some(s => s.text.startsWith('Kept artists active 1956 to 1976')));
     assert.deepEqual(result.pool.media.map(m => m.kind), ['film', 'show']);

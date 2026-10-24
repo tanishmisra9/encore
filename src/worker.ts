@@ -1,4 +1,4 @@
-import { applyReaction, buildPlan, prompts, refill, validate, type Item, type Pool, type Profile, type Reaction } from './engine';
+import { alternates, applyReaction, buildPlan, prompts, refill, validate, type Item, type Pool, type Profile, type Reaction } from './engine';
 import { previewFor, runAgent, searchArtists, type Cache, type Step } from './qloo';
 import { SHELVES } from './shelves';
 
@@ -19,8 +19,16 @@ async function read(db: D1Database, id: string): Promise<Session | null> {
   const row = await db.prepare('SELECT body FROM sessions WHERE id = ? AND expires_at > ?').bind(id, Date.now()).first<{ body: string }>();
   return row ? JSON.parse(row.body) : null;
 }
-async function withPreviews(plan: Item[], cache: Cache): Promise<Item[]> {
-  return Promise.all(plan.map(async item => item.kind === 'song' && item.by && item.previewUrl === undefined ? { ...item, previewUrl: await previewFor(item.title, item.by, cache) } : item));
+// Qloo's notable_songs can name an album or a track iTunes lacks, so try the artist's other songs until one has audio.
+async function withPreviews(plan: Item[], pool: Pool, cache: Cache): Promise<Item[]> {
+  return Promise.all(plan.map(async item => {
+    if (item.kind !== 'song' || !item.by || item.previewUrl !== undefined) return item;
+    for (const title of [item.title, ...alternates(pool, item)]) {
+      const previewUrl = await previewFor(title, item.by, cache);
+      if (previewUrl) return { ...item, title, id: `${item.artistId}:${title}`, previewUrl };
+    }
+    return { ...item, previewUrl: null };
+  }));
 }
 
 async function create(request: Request, env: Env): Promise<Response> {
@@ -29,7 +37,7 @@ async function create(request: Request, env: Env): Promise<Response> {
   const cache = dbCache(env.DB);
   let result; try { result = await runAgent(input, env.QLOO_API_KEY, cache); } catch (error) { return bad(error instanceof Error ? error.message : 'Qloo failed.', 502); }
   const profile: Profile = { born: input.born, name: input.name, anchors: result.anchors, weights: {}, banned: [] };
-  const plan = await withPreviews(buildPlan(result.pool, profile), cache);
+  const plan = await withPreviews(buildPlan(result.pool, profile), result.pool, cache);
   if (!plan.some(item => item.kind === 'song')) return bad('Qloo found no gentle, familiar songs from those years. Try different artists.', 422);
   const session: Session = { id: crypto.randomUUID(), version: 0, profile, pool: result.pool, plan, trace: result.trace, unresolved: result.unresolved, createdAt: Date.now() };
   await env.DB.prepare('INSERT INTO sessions (id, version, body, expires_at) VALUES (?,?,?,?)').bind(session.id, 0, JSON.stringify(session), Date.now() + KEEP).run();
@@ -44,7 +52,7 @@ async function react(request: Request, env: Env, id: string): Promise<Response> 
   const reaction = body.reaction as Reaction, cache = dbCache(env.DB);
   const profile = applyReaction(session.profile, item, reaction);
   const marked = session.plan.map(i => i.id === item.id ? { ...i, reaction } : i);
-  const plan = await withPreviews(refill(marked, session.pool, profile), cache);
+  const plan = await withPreviews(refill(marked, session.pool, profile), session.pool, cache);
   const next: Session = { ...session, profile, plan, version: session.version + 1 };
   const saved = await env.DB.prepare('UPDATE sessions SET version = ?, body = ? WHERE id = ? AND version = ?').bind(next.version, JSON.stringify(next), id, session.version).run();
   return saved.meta.changes === 1 ? json(view(next)) : bad('The session changed. Try again.', 409);

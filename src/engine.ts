@@ -1,8 +1,8 @@
 // Deterministic core: nothing here calls a model or a network. Qloo finds candidates; these rules decide what is safe to play.
 export type Artist = { id: string; name: string; start?: number; end?: number; obscurity?: number; complexity?: number; themes: string[]; songs: string[]; genres: string[]; image?: string; via?: string };
-export type Media = { id: string; title: string; year: number; kind: 'film' | 'show'; image?: string };
+export type Media = { id: string; title: string; year: number; kind: 'film' | 'show'; image?: string; popularity?: number };
 export type Reaction = 'smiled' | 'neutral' | 'upset';
-export type Item = { id: string; kind: 'song' | 'film' | 'show'; code: string; title: string; by?: string; artistId?: string; genres: string[]; year: number; age: number; image?: string; previewUrl?: string | null; via?: string; found: boolean; notes: string[]; reaction?: Reaction };
+export type Item = { id: string; kind: 'song' | 'film' | 'show'; code: string; title: string; by?: string; artistId?: string; genres: string[]; year: number; age: number; ages?: [number, number]; image?: string; previewUrl?: string | null; via?: string; found: boolean; notes: string[]; reaction?: Reaction };
 export type Profile = { born: number; name?: string; anchors: { id: string; name: string }[]; weights: Record<string, number>; banned: string[] };
 export type Pool = { artists: Artist[]; media: Media[] };
 
@@ -52,11 +52,15 @@ export function eligible(pool: Pool, profile: Profile): Artist[] {
 
 function songItem(artist: Artist, profile: Profile, code: string, used: Set<string>): Item {
   const title = artist.songs.find(song => !used.has(song.toLowerCase())) ?? artist.songs[0];
-  const year = Math.min(Math.max(artist.start ?? profile.born + 20, profile.born + 10), profile.born + 30);
-  return { id: `${artist.id}:${title}`, kind: 'song', code, title, by: artist.name, artistId: artist.id, genres: artist.genres, year, age: year - profile.born, image: artist.image, via: artist.via, found: !profile.anchors.some(a => a.id === artist.id),
+  // Qloo gives the artist's active years, not each song's release year, so show the ages they were active within the window.
+  const from = Math.max(artist.start ?? 0, profile.born + 10), to = Math.min(artist.end ?? Infinity, profile.born + 30);
+  return { id: `${artist.id}:${title}`, kind: 'song', code, title, by: artist.name, artistId: artist.id, genres: artist.genres, year: from, age: from - profile.born, ages: [from - profile.born, to - profile.born], image: artist.image, via: artist.via, found: !profile.anchors.some(a => a.id === artist.id),
     notes: [`active ${artist.start}${artist.end ? `-${artist.end}` : ' on'}`, ...safety(artist).notes] };
 }
 const mediaItem = (media: Media, profile: Profile, code: string): Item => ({ id: media.id, kind: media.kind, code, title: media.title, genres: [], year: media.year, age: media.year - profile.born, image: media.image, found: true, notes: [`released ${media.year}`] });
+
+// Songs the artist is known for, other than the ones already picked, in Qloo's order.
+export const alternates = (pool: Pool, item: Item): string[] => pool.artists.find(a => a.id === item.artistId)?.songs.filter(song => song !== item.title) ?? [];
 
 export function buildPlan(pool: Pool, profile: Profile): Item[] {
   const used = new Set<string>(), items: Item[] = [];

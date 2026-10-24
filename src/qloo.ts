@@ -41,18 +41,20 @@ export function toArtist(raw: Raw): Artist | null {
 }
 export function toMedia(raw: Raw, kind: 'film' | 'show'): Media | null {
   const year = one(raw.properties?.release_year);
-  return raw.entity_id && raw.name && year ? { id: raw.entity_id, title: raw.name, year, kind, image: image(raw.properties?.image) } : null;
+  return raw.entity_id && raw.name && year ? { id: raw.entity_id, title: raw.name, year, kind, image: image(raw.properties?.image), popularity: typeof (raw as { popularity?: unknown }).popularity === 'number' ? (raw as { popularity: number }).popularity : 0 } : null;
 }
 
+async function searchRaw(q: string, key: string, cache?: Cache): Promise<Raw[]> {
+  return list(await qlooGet('/search', { query: q, take: '6', types: 'urn:entity:artist' }, key, cache)).filter(e => e.entity_id && e.name);
+}
 export async function searchArtists(q: string, key: string, cache?: Cache): Promise<{ id: string; name: string; image?: string }[]> {
-  const data = await qlooGet('/search', { query: q, take: '6', types: 'urn:entity:artist' }, key, cache);
-  return list(data).filter(e => e.entity_id && e.name).map(e => ({ id: e.entity_id!, name: e.name!, image: image(e.properties?.image) })).slice(0, 6);
+  return (await searchRaw(q, key, cache)).map(e => ({ id: e.entity_id!, name: e.name!, image: image(e.properties?.image) })).slice(0, 6);
 }
 // Qloo search is fuzzy (a nonsense name still returns something), so accept a match only when the names agree.
-export async function resolveAnchor(name: string, key: string, cache?: Cache): Promise<{ id: string; name: string } | null> {
+export async function resolveAnchor(name: string, key: string, cache?: Cache): Promise<{ id: string; name: string; artist: Artist | null } | null> {
   const wanted = norm(name);
-  const hit = (await searchArtists(name, key, cache)).find(a => { const got = norm(a.name); return got === wanted || got.includes(wanted) || wanted.includes(got); });
-  return hit ? { id: hit.id, name: hit.name } : null;
+  const hit = (await searchRaw(name, key, cache)).find(a => { const got = norm(a.name!); return got === wanted || got.includes(wanted) || wanted.includes(got); });
+  return hit ? { id: hit.entity_id!, name: hit.name!, artist: toArtist(hit) } : null;
 }
 
 export type AgentResult = { anchors: { id: string; name: string }[]; unresolved: string[]; pool: Pool; trace: Step[] };
@@ -61,11 +63,14 @@ export const TARGET_SAFE = 15, MAX_HOPS = 3;
 export async function runAgent(input: { born: number; anchors: string[] }, key: string, cache?: Cache): Promise<AgentResult> {
   const trace: Step[] = [], [from, to] = eraWindow(input.born);
   const resolved = await Promise.all(input.anchors.map(async name => ({ name, hit: await resolveAnchor(name, key, cache) })));
-  const anchors = resolved.flatMap(r => r.hit ? [r.hit] : []), unresolved = resolved.filter(r => !r.hit).map(r => r.name);
+  const anchors = resolved.flatMap(r => r.hit ? [{ id: r.hit.id, name: r.hit.name }] : []), unresolved = resolved.filter(r => !r.hit).map(r => r.name);
   if (!anchors.length) throw Object.assign(new Error(`Qloo could not find ${unresolved.join(', ')}. Check the spelling or pick from the shelf.`), { unresolved });
   trace.push({ text: `Found ${anchors.map(a => a.name).join(', ')} in Qloo.`, kept: anchors.length, dropped: unresolved.length });
 
   const names = new Map(anchors.map(a => [a.id, a.name])), pool = new Map<string, Artist>();
+  // The artists the caregiver named go first: they are the surest songs, and they face the same safety screen as everyone else.
+  for (const { hit } of resolved) if (hit?.artist) pool.set(hit.id, hit.artist);
+  for (const { hit } of resolved) if (hit?.artist && !(inWindow(hit.artist, input.born) && safety(hit.artist).safe)) trace.push({ text: `Left out ${hit.name}: ${!inWindow(hit.artist, input.born) ? `not active ${from} to ${to}` : safety(hit.artist).notes[0]}.` });
   let signals = anchors.map(a => a.id);
   const used = new Set(signals);
   for (let hop = 1; hop <= MAX_HOPS; hop++) {
@@ -73,7 +78,7 @@ export async function runAgent(input: { born: number; anchors: string[] }, key: 
     const data = await qlooGet('/v2/insights', { 'filter.type': 'urn:entity:artist', 'signal.interests.entities': signals.join(','), take: '50', 'feature.explainability': 'true' }, key, cache);
     let added = 0;
     for (const raw of list(data)) {
-      const artist = toArtist(raw); if (!artist || pool.has(artist.id) || names.has(artist.id) && anchors.some(a => a.id === artist.id)) continue;
+      const artist = toArtist(raw); if (!artist || pool.has(artist.id)) continue;
       const top = Object.values(raw.query?.explainability || {}).flat().sort((a, b) => b.score - a.score)[0];
       artist.via = top ? names.get(top.entity_id) : undefined;
       pool.set(artist.id, artist); names.set(artist.id, artist.name); added++;
@@ -92,8 +97,9 @@ export async function runAgent(input: { born: number; anchors: string[] }, key: 
   const seeds = [...pool.values()].filter(a => inWindow(a, input.born) && safety(a).safe).slice(0, 5).map(a => a.id);
   const media: Media[] = [];
   for (const [type, kind] of [['movie', 'film'], ['tv_show', 'show']] as const) {
-    const data = await qlooGet('/v2/insights', { 'filter.type': `urn:entity:${type}`, 'signal.interests.entities': [...anchors.map(a => a.id), ...seeds].join(','), 'filter.release_year.min': String(from), 'filter.release_year.max': String(to), take: '6' }, key, cache).catch(() => null);
-    const first = list(data).map(raw => toMedia(raw, kind)).find(m => m && m.image);
+    const data = await qlooGet('/v2/insights', { 'filter.type': `urn:entity:${type}`, 'signal.interests.entities': [...anchors.map(a => a.id), ...seeds].join(','), 'filter.release_year.min': String(from), 'filter.release_year.max': String(to), take: '12' }, key, cache).catch(() => null);
+    // Of the in-window results with artwork, show the most widely known: a familiar title is safer than an obscure one.
+    const first = list(data).map(raw => toMedia(raw, kind)).filter((m): m is Media => !!m && !!m.image).sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))[0];
     if (first) media.push(first);
   }
   trace.push({ text: `Picked films and shows released ${from} to ${to}.`, kept: media.length });
