@@ -43,7 +43,6 @@ h2 { font: 700 28px/1.1 var(--font-display); text-transform: uppercase; letter-s
 
 .strip { background: var(--card); color: var(--ink); border: 1px solid var(--ink); border-radius: var(--radius); display: grid; grid-template-columns: 56px 1fr 56px; position: relative; overflow: hidden; }
 .strip .code { display: grid; place-items: center; font: 700 22px var(--font-display); background: var(--stock, var(--red)); color: #fff; }
-.strip.s-mustard .code { color: var(--ink); }
 .strip .text { padding: 0 12px 10px; min-width: 0; }
 .strip.noplay { grid-template-columns: 56px 1fr; }
 .strip .toggle { all: unset; cursor: pointer; display: block; color: inherit; min-height: 44px; box-sizing: border-box; padding: 8px 0 0; }
@@ -52,7 +51,6 @@ h2 { font: 700 28px/1.1 var(--font-display); text-transform: uppercase; letter-s
 .strip .by { margin: 2px 0 0; font-weight: 600; }
 .strip .meta { margin: 4px 0 0; font-size: 15px; color: var(--ink-soft); }
 .strip .play { border: 0; border-left: 1px solid var(--ink); background: var(--stock, var(--red)); color: #fff; cursor: pointer; display: grid; place-items: center; min-height: 64px; touch-action: manipulation; }
-.strip.s-mustard .play { color: var(--ink); }
 .strip .play:hover { background: var(--ink); color: #fff; }
 .strip .play.rate { font: 700 18px var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
 .strip .play svg { width: 24px; height: 24px; fill: currentColor; }
@@ -65,7 +63,7 @@ h2 { font: 700 28px/1.1 var(--font-display); text-transform: uppercase; letter-s
 .strip .react button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
 .strip .bar { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: var(--stock, var(--red)); transform: scaleX(0); transform-origin: left; }
 .strip.playing { box-shadow: 0 0 0 3px var(--mustard); }
-.s-red { --stock: var(--red); } .s-mustard { --stock: var(--mustard); } .s-green { --stock: var(--green); } .s-cobalt { --stock: var(--cobalt); }
+.s-red { --stock: var(--red); } .s-green { --stock: var(--green); } .s-cobalt { --stock: var(--cobalt); }
 .strip.blank { border-style: dashed; background: transparent; color: var(--muted); border-color: var(--line); min-height: 88px; grid-template-columns: 56px 1fr; }
 .strip.blank .code { background: var(--line); color: var(--muted); }
 .strip.blank .text { display: flex; align-items: center; font: 600 22px var(--font-display); letter-spacing: .04em; text-transform: uppercase; }
