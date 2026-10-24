@@ -92,10 +92,10 @@ It refuses the soft-focus caregiving app, the dark music-grid app, and the agent
 A committed palette: one warm black field, off-white strips, and four printing stocks.
 
 ### Primary
-- **Mustard Stock** (#e9b21a): the single action color (primary button, focus ring, playing-strip ring, headline emphasis) and a strip stock.
+- **Mustard Stock** (#e9b21a): the single action color (primary button, focus ring, playing-strip ring, headline emphasis). It is never a strip stock.
 
 ### Secondary
-- **Red Stock** (#c62d26), **Green Stock** (#1a7a43), **Cobalt Stock** (#2858c8): code blocks and play blocks, assigned by kind of item. Color is meaning: mustard is a song the caregiver named, red a song Qloo found, cobalt a film, green a show. White text on red, green and cobalt; ink on mustard.
+- **Red Stock** (#c62d26), **Green Stock** (#1a7a43), **Cobalt Stock** (#2858c8): code blocks and play blocks. Color is meaning, with a one-line key under the wall heading: cobalt is a song the caregiver named, red a song Qloo found, green a film or show. White text on red, green and cobalt; ink on mustard.
 
 ### Neutral
 - **Cabinet Black** (#17120f): the page field. **Cabinet Panel** (#221b16) and **Cabinet Line** (#3a3027): quiet dividers and the blank-strip outline.

@@ -2,7 +2,7 @@
 export type Artist = { id: string; name: string; start?: number; end?: number; obscurity?: number; complexity?: number; themes: string[]; songs: string[]; genres: string[]; image?: string; via?: string; known?: { title: string; year: number; previewUrl: string }[] };
 export type Media = { id: string; title: string; year: number; kind: 'film' | 'show'; image?: string; popularity?: number };
 export type Reaction = 'smiled' | 'neutral' | 'upset';
-export type Item = { id: string; kind: 'song' | 'film' | 'show'; code: string; title: string; by?: string; artistId?: string; genres: string[]; year: number; age: number; ages?: [number, number]; image?: string; previewUrl?: string | null; via?: string; found: boolean; notes: string[]; reaction?: Reaction };
+export type Item = { id: string; kind: 'song' | 'film' | 'show'; code: string; title: string; by?: string; artistId?: string; genres: string[]; year: number; age: number; ages?: [number, number]; active?: string; image?: string; previewUrl?: string | null; via?: string; found: boolean; notes: string[]; reaction?: Reaction };
 export type Profile = { born: number; name?: string; anchors: { id: string; name: string }[]; weights: Record<string, number>; banned: string[] };
 export type Pool = { artists: Artist[]; media: Media[] };
 
@@ -63,7 +63,7 @@ function songItem(artist: Artist, profile: Profile, code: string, used: Set<stri
   const title = artist.songs.find(song => !used.has(key(song))) ?? artist.songs[0];
   // Qloo gives the artist's active years, not each song's release year, so show the ages they were active within the window.
   const from = Math.max(artist.start ?? 0, profile.born + 10), to = Math.min(artist.end ?? Infinity, profile.born + 30);
-  return { id: `${artist.id}:${title}`, kind: 'song', code, title, by: artist.name, artistId: artist.id, genres: artist.genres, year: from, age: from - profile.born, ages: [from - profile.born, to - profile.born], image: artist.image, via: artist.via, found: !profile.anchors.some(a => a.id === artist.id),
+  return { id: `${artist.id}:${title}`, kind: 'song', code, title, by: artist.name, artistId: artist.id, genres: artist.genres, year: from, age: from - profile.born, ages: [from - profile.born, to - profile.born], active: artist.start === undefined ? undefined : artist.end ? `${artist.start} to ${artist.end}` : `since ${artist.start}`, image: artist.image, via: artist.via, found: !profile.anchors.some(a => a.id === artist.id),
     notes: [`active ${artist.start}${artist.end ? `-${artist.end}` : ' on'}`, ...safety(artist).notes] };
 }
 const mediaItem = (media: Media, profile: Profile, code: string): Item => ({ id: media.id, kind: media.kind, code, title: media.title, genres: [], year: media.year, age: media.year - profile.born, image: media.image, found: true, notes: [`released ${media.year}`] });
