@@ -1,12 +1,8 @@
 {
-  "name": "encore",
+  "name": "memory-lane",
   "main": "src/worker.ts",
   "compatibility_date": "2026-10-22",
-  "vars": {
-    "DISCORD_APPLICATION_ID": "1562884435278565416",
-    "DISCORD_PUBLIC_KEY": "00db7b0047e429d0f4889c54462507a9e3c360f7e59f027ca9b732946e1b0293"
-  },
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "triggers": { "crons": ["0 4 * * *"] },
-  "d1_databases": [{ "binding": "DB", "database_name": "encore", "database_id": "17e007a9-3a53-466e-851b-3725a75f2c5f" }]
+  "d1_databases": [{ "binding": "DB", "database_name": "memory-lane", "database_id": "17e007a9-3a53-466e-851b-3725a75f2c5f" }]
 }

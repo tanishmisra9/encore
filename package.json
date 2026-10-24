@@ -1,5 +1,5 @@
 {
-  "name": "encore",
+  "name": "memory-lane",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,8 +7,8 @@
     "deploy": "wrangler deploy",
     "check": "tsc --noEmit",
     "test": "node --import tsx --test test/*.test.ts",
-    "discord:register": "node --env-file=.env scripts/register-discord.mjs",
-    "sandbox": "node test/sandbox.mjs"
+    "e2e": "node test/browser.mjs",
+    "eval": "node --import tsx scripts/eval.mts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261022.1",
